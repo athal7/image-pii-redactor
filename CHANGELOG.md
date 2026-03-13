@@ -1,3 +1,10 @@
+## [0.3.1](https://github.com/athal7/image-pii-redactor/compare/v0.3.0...v0.3.1) (2026-03-13)
+
+
+### Bug Fixes
+
+* **component:** remove viewport max-height and overflow to show full image ([ad50d22](https://github.com/athal7/image-pii-redactor/commit/ad50d22c566ed6b46db83920c1dade6adb6e3aa2))
+
 # [0.3.0](https://github.com/athal7/image-pii-redactor/compare/v0.2.0...v0.3.0) (2026-03-13)
 
 
