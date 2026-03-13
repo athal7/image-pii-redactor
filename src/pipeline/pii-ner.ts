@@ -307,6 +307,12 @@ async function loadPipeline(
   // Attempt WebGPU, fall back gracefully
   env.allowLocalModels = false;
 
+  // On mobile, skip the WebGPU probe (adds latency + often falls back anyway)
+  // and go straight to WASM. On desktop, "auto" tries WebGPU first.
+  const isMobile =
+    typeof navigator !== "undefined" &&
+    /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
   const pipelineOptions: Record<string, unknown> = {
     progress_callback: (p: any) => {
       if (p.status === "progress" && p.total) {
@@ -317,9 +323,10 @@ async function loadPipeline(
         });
       }
     },
-    // Try WebGPU first, falls back to WASM automatically
-    device: "auto",
-    dtype: "q8", // Quantized for smaller download + faster inference
+    // Use WASM on mobile (avoids slow WebGPU probe), auto on desktop
+    device: isMobile ? "wasm" : "auto",
+    // q4 (~45 MB) vs q8 (~85 MB) — halves the download with minimal accuracy loss
+    dtype: "q4",
   };
 
   pipelineInstance = await pipeline(
