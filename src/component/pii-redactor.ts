@@ -64,8 +64,26 @@ export class PiiRedactor extends LitElement {
   private imageFile: File | null = null;
   private imageElement: HTMLImageElement | null = null;
   private undoStack: Redaction[][] = [];
+  private perfObserver: PerformanceObserver | null = null;
 
   @query(".file-input") private fileInput!: HTMLInputElement;
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    // Count real network requests so the trust banner shows live data.
+    // PerformanceObserver is available in all modern browsers.
+    if (typeof PerformanceObserver !== "undefined") {
+      this.perfObserver = new PerformanceObserver(() => {
+        this.networkRequestCount++;
+      });
+      try {
+        this.perfObserver.observe({ type: "resource", buffered: true });
+      } catch {
+        // Some environments don't support resource timing — ignore
+        this.perfObserver = null;
+      }
+    }
+  }
 
   // --- Public methods ---
 
@@ -96,6 +114,8 @@ export class PiiRedactor extends LitElement {
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     if (this.imageUrl) URL.revokeObjectURL(this.imageUrl);
+    this.perfObserver?.disconnect();
+    this.perfObserver = null;
   }
 
   // --- Rendering ---
@@ -217,7 +237,7 @@ export class PiiRedactor extends LitElement {
           </button>
         </div>
 
-        <div class="viewport">
+        <div class="viewport ${this.drawMode ? "draw-mode" : ""}">
           <div class="viewport-inner">
             <img
               src=${this.imageUrl}

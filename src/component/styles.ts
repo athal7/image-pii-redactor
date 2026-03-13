@@ -182,12 +182,14 @@ export const redactorStyles = css`
     left: 0;
     width: 100%;
     height: 100%;
-    /* Default: allow scroll gestures to pass through */
-    touch-action: pan-x pan-y;
+    /* Inherit touch-action from .viewport so the scroll container controls it */
+    touch-action: inherit;
   }
 
-  /* When draw mode is active, block scroll so the drag gesture is captured */
-  .viewport svg.draw-mode {
+  /* When draw mode is active, block scroll on the scroll CONTAINER itself.
+     touch-action on a child cannot override a permissive ancestor — the
+     browser's gesture recogniser respects the container's declaration first. */
+  .viewport.draw-mode {
     touch-action: none;
   }
 
