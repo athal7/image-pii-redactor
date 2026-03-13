@@ -1,3 +1,15 @@
+# [0.3.0](https://github.com/athal7/image-pii-redactor/compare/v0.2.0...v0.3.0) (2026-03-13)
+
+
+### Bug Fixes
+
+* **component:** fix network counter showing page-load requests ([2ee67e6](https://github.com/athal7/image-pii-redactor/commit/2ee67e6c22ef447aa03780ec28533069a1d93cee))
+
+
+### Features
+
+* **component:** smart preload + move network counter to done screen ([56f9dcc](https://github.com/athal7/image-pii-redactor/commit/56f9dccba7812c9843d03bcc0a4b60a68c681b9e))
+
 # [0.2.0](https://github.com/athal7/image-pii-redactor/compare/v0.1.1...v0.2.0) (2026-03-13)
 
 
