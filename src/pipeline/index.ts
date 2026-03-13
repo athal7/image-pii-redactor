@@ -15,14 +15,16 @@ import type {
 import { runOcr } from "./ocr.js";
 import { detectPiiNer, releaseNerModel } from "./pii-ner.js";
 import { detectPiiRegex } from "./pii-regex.js";
+import { detectPiiCompromise } from "./pii-compromise.js";
 import { entitiesToRedactions, mergeEntities } from "./bridge.js";
 
 export { runOcr } from "./ocr.js";
 export { detectPiiNer, preloadNerModel, releaseNerModel } from "./pii-ner.js";
 export { detectPiiRegex } from "./pii-regex.js";
+export { detectPiiCompromise } from "./pii-compromise.js";
 export { entitiesToRedactions, mergeEntities } from "./bridge.js";
 export { renderRedactedImage, drawRedactionPreview } from "./redact.js";
-export { preprocessForOcr, computeAverageLuminance, isDarkBackground, DARK_THRESHOLD } from "./preprocess.js";
+export { preprocessForOcr, computeAverageLuminance, isDarkBackground, sampleDistributedPixels, DARK_THRESHOLD } from "./preprocess.js";
 
 /**
  * Run the full pipeline: OCR → PII detection → redaction mapping.
@@ -60,6 +62,7 @@ export async function analyzeImage(
   });
 
   const regexEntities = cfg.useRegex ? detectPiiRegex(ocr.fullText) : [];
+  const compromiseEntities = cfg.useCompromise ? detectPiiCompromise(ocr.fullText) : [];
 
   // In low-memory mode, release any cached NER model before loading a fresh
   // one — this avoids holding two large model allocations simultaneously.
@@ -71,8 +74,10 @@ export async function analyzeImage(
   // Run NER (async, slower)
   const nerEntities = await detectPiiNer(ocr.fullText, cfg.nerModel, cfg.minConfidence, onProgress);
 
-  // Step 3: Merge and deduplicate
-  const entities = mergeEntities(nerEntities, regexEntities);
+  // Step 3: Merge and deduplicate all three sources.
+  // NER wins over compromise when they overlap (higher score + 0.1 boost in
+  // mergeEntities), so NER's context-aware result is preferred where available.
+  const entities = mergeEntities(nerEntities, [...regexEntities, ...compromiseEntities]);
 
   // Step 4: Map to image bounding boxes
   const redactions = entitiesToRedactions(entities, ocr.words, ocr.imageWidth, ocr.imageHeight);

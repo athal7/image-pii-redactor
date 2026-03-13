@@ -52,7 +52,7 @@ export interface PiiEntity {
   /** Confidence score 0-1. For regex matches this is 1.0. */
   score: number;
   /** Detection source. */
-  source: "ner" | "regex";
+  source: "ner" | "regex" | "compromise";
 }
 
 /**
@@ -126,6 +126,8 @@ export interface RedactorConfig {
   minConfidence?: number;
   /** Whether to run regex PII patterns in addition to NER. Default: true. */
   useRegex?: boolean;
+  /** Whether to run compromise-based person name detection in addition to NER. Default: true. */
+  useCompromise?: boolean;
   /**
    * Memory mode for constrained devices.
    *
@@ -146,6 +148,7 @@ export interface RedactorConfig {
 export const LABEL_DISPLAY_NAMES: Record<string, string> = {
   GIVENNAME:    "First name",
   SURNAME:      "Last name",
+  PERSON:       "Person name",
   EMAIL:        "Email address",
   TELEPHONENUM: "Phone number",
   STREET:       "Street address",
@@ -167,5 +170,6 @@ export const DEFAULT_CONFIG: Required<RedactorConfig> = {
   acceptedTypes: ["image/png", "image/jpeg", "image/webp"],
   minConfidence: 0.7,
   useRegex: true,
+  useCompromise: true,
   memoryMode: "auto",
 };

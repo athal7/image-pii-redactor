@@ -10,6 +10,7 @@ import { describe, it, expect } from "vitest";
 import {
   computeAverageLuminance,
   isDarkBackground,
+  sampleDistributedPixels,
   DARK_THRESHOLD,
 } from "../preprocess.js";
 
@@ -122,5 +123,80 @@ describe("isDarkBackground", () => {
     const lum = computeAverageLuminance(midGray);
     // Mid-gray luminance is ~128, isDark uses lum < DARK_THRESHOLD
     expect(isDarkBackground(midGray)).toBe(lum < DARK_THRESHOLD);
+  });
+});
+
+// ── sampleDistributedPixels ───────────────────────────────────────────────────
+
+/**
+ * A minimal mock canvas context that supports getImageData.
+ * We model the image as a flat RGBA array and return patches correctly.
+ */
+function makeMockCtx(
+  width: number,
+  height: number,
+  pixelFn: (x: number, y: number) => [number, number, number],
+): Pick<CanvasRenderingContext2D, "getImageData"> {
+  return {
+    getImageData(sx: number, sy: number, sw: number, sh: number) {
+      const data = new Uint8ClampedArray(sw * sh * 4);
+      for (let row = 0; row < sh; row++) {
+        for (let col = 0; col < sw; col++) {
+          const x = Math.min(sx + col, width - 1);
+          const y = Math.min(sy + row, height - 1);
+          const [r, g, b] = pixelFn(x, y);
+          const i = (row * sw + col) * 4;
+          data[i]     = r;
+          data[i + 1] = g;
+          data[i + 2] = b;
+          data[i + 3] = 255;
+        }
+      }
+      return { data } as ImageData;
+    },
+  };
+}
+
+describe("sampleDistributedPixels", () => {
+  it("returns pixel data for a uniform white image", () => {
+    const ctx = makeMockCtx(200, 100, () => [255, 255, 255]);
+    const pixels = sampleDistributedPixels(ctx as any, 200, 100);
+    expect(pixels.length).toBeGreaterThan(0);
+    expect(computeAverageLuminance(pixels)).toBeCloseTo(255, 0);
+  });
+
+  it("returns pixel data for a uniform dark image", () => {
+    const ctx = makeMockCtx(200, 100, () => [0, 0, 0]);
+    const pixels = sampleDistributedPixels(ctx as any, 200, 100);
+    expect(computeAverageLuminance(pixels)).toBeCloseTo(0, 0);
+  });
+
+  it("detects dark right half in a split white-left/dark-right image", () => {
+    // Left half is white (x < 100), right half is black (x >= 100)
+    const ctx = makeMockCtx(200, 100, (x) => (x < 100 ? [255, 255, 255] : [0, 0, 0]));
+    const pixels = sampleDistributedPixels(ctx as any, 200, 100);
+    // The distributed sample covers both halves — average luminance should be
+    // well below 255 (right half drags it down) and well above 0
+    const lum = computeAverageLuminance(pixels);
+    expect(lum).toBeLessThan(200);
+    expect(lum).toBeGreaterThan(50);
+  });
+
+  it("detects dark right half as dark when top-left corner sampling would miss it", () => {
+    // Simulate a two-column screenshot: white document left, dark chat right.
+    // The top-left corner (where old code sampled) is white → would incorrectly
+    // return 'light'. The distributed sampler must correctly identify the mix.
+    const ctx = makeMockCtx(400, 200, (x) => (x < 200 ? [240, 240, 240] : [20, 20, 40]));
+    const pixels = sampleDistributedPixels(ctx as any, 400, 200);
+    const lum = computeAverageLuminance(pixels);
+    // Mixed: roughly half white (~240) and half very dark (~27).
+    // Average should be around 130 — close to threshold but not obviously light
+    expect(lum).toBeLessThan(200); // Not "all white"
+    expect(lum).toBeGreaterThan(10); // Not "all dark"
+  });
+
+  it("handles small images without throwing", () => {
+    const ctx = makeMockCtx(4, 4, () => [100, 100, 100]);
+    expect(() => sampleDistributedPixels(ctx as any, 4, 4)).not.toThrow();
   });
 });

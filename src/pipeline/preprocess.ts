@@ -16,6 +16,57 @@
 export const DARK_THRESHOLD = 128;
 
 /**
+ * The number of grid divisions used when sampling pixels for background
+ * darkness detection. A 5×5 grid gives 25 evenly-distributed sample regions
+ * spread across the full image, ensuring mixed-layout images (e.g. a white
+ * document on the left and a dark chat panel on the right) are detected
+ * correctly instead of only sampling the top-left corner.
+ */
+const SAMPLE_GRID_COLS = 5;
+const SAMPLE_GRID_ROWS = 5;
+/** Size of each sampled patch in pixels. */
+const SAMPLE_PATCH_SIZE = 8;
+
+/**
+ * Sample pixels from a distributed grid across the full image and concatenate
+ * them into a single RGBA Uint8ClampedArray for luminance analysis.
+ *
+ * This replaces the previous approach of sampling only a rectangle anchored
+ * at the top-left corner, which would always return "light" for images with
+ * a white document panel on the left regardless of the rest of the image.
+ *
+ * Exported for unit testing.
+ */
+export function sampleDistributedPixels(
+  ctx: Pick<CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, "getImageData">,
+  width: number,
+  height: number,
+): Uint8ClampedArray {
+  const patchSize = Math.min(SAMPLE_PATCH_SIZE, width, height);
+  const patches: Uint8ClampedArray[] = [];
+
+  for (let gy = 0; gy < SAMPLE_GRID_ROWS; gy++) {
+    for (let gx = 0; gx < SAMPLE_GRID_COLS; gx++) {
+      // Distribute patch origins evenly across the full image
+      const sx = Math.floor((gx / SAMPLE_GRID_COLS) * (width - patchSize));
+      const sy = Math.floor((gy / SAMPLE_GRID_ROWS) * (height - patchSize));
+      const patch = ctx.getImageData(sx, sy, patchSize, patchSize);
+      patches.push(patch.data);
+    }
+  }
+
+  // Concatenate all patch pixel arrays into a single buffer
+  const totalLength = patches.reduce((sum, p) => sum + p.length, 0);
+  const combined = new Uint8ClampedArray(totalLength);
+  let offset = 0;
+  for (const patch of patches) {
+    combined.set(patch, offset);
+    offset += patch.length;
+  }
+  return combined;
+}
+
+/**
  * Compute the perceived average luminance of an RGBA pixel buffer.
  *
  * Uses the ITU-R BT.601 luma coefficients:
@@ -86,13 +137,12 @@ export async function preprocessForOcr(
     ctx.drawImage(imageBitmap, 0, 0);
     imageBitmap.close();
 
-    // Sample pixels to detect background darkness
-    // We sample a reduced grid (max 1024 pixels) for speed
-    const sampleSize = Math.min(width * height, 1024);
-    const sampleW = Math.ceil(Math.sqrt((sampleSize * width) / height));
-    const sampleH = Math.ceil(Math.sqrt((sampleSize * height) / width));
-    const sampleData = ctx.getImageData(0, 0, sampleW, sampleH);
-    const dark = isDarkBackground(sampleData.data);
+    // Sample pixels to detect background darkness using a distributed grid
+    // across the full image. Previously this only sampled the top-left corner,
+    // which gave wrong results for mixed-layout images (e.g. a white document
+    // panel on the left and a dark chat panel on the right).
+    const sampledPixels = sampleDistributedPixels(ctx, width, height);
+    const dark = isDarkBackground(sampledPixels);
 
     if (!dark) {
       // Light background — no inversion needed, still apply mild contrast
