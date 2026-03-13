@@ -88,11 +88,21 @@ tests/
 
 ## CI
 
-| Workflow | Trigger | What it runs |
-|----------|---------|--------------|
-| `publish-npm.yml` | push to main | `npm test` (unit) + semantic-release |
-| `deploy-demo.yml` | push to main | `npm run build:demo` + GitHub Pages deploy |
-| `e2e.yml` | push/PR to main | `npm run build:demo` + Playwright e2e |
+All CI is defined in a single `.github/workflows/ci.yml` with explicit job dependencies:
+
+```
+test ──┐
+       ├──▶ release  (push to main only)
+e2e  ──┤
+       └──▶ deploy   (push to main only)
+```
+
+| Job | Trigger | What it runs |
+|-----|---------|--------------|
+| `test` | push + PR to main | `npm test` (vitest unit tests) |
+| `e2e` | push + PR to main | `npm run build:demo` + Playwright e2e |
+| `release` | push to main (after test + e2e) | semantic-release → npm publish |
+| `deploy` | push to main (after test + e2e) | GitHub Pages deploy |
 
 The NER model (~80MB) is cached in CI via the Chromium user data dir at
 `/tmp/pw-model-cache`, keyed on the model ID.

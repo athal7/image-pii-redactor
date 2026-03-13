@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Unit tests ──────────────────────────────────────────────────────────────
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm install
+
+      - run: npm test
+
+  # ── E2E tests ────────────────────────────────────────────────────────────────
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm install
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      # Cache the Chromium user data dir that holds the downloaded NER model
+      # (~80MB via the browser Cache API). Bust the cache when the model changes.
+      - name: Cache NER model (browser storage)
+        uses: actions/cache@v4
+        with:
+          path: /tmp/pw-model-cache
+          key: ner-model-onnx-community-multilang-pii-ner-ONNX-v1
+
+      - name: Build demo
+        run: npm run build:demo
+
+      - name: Serve demo and run e2e tests
+        run: |
+          npx serve -l 5173 dist-demo &
+          sleep 2
+          VITE_RUNNING=1 PLAYWRIGHT_USER_DATA_DIR=/tmp/pw-model-cache npx playwright test
+
+  # ── Release (npm publish via semantic-release) — push to main only ───────────
+  release:
+    name: Release
+    needs: [test, e2e]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: npm-publish
+    permissions:
+      contents: write       # push release commit + tag
+      issues: write         # comment on issues
+      pull-requests: write  # comment on PRs
+      id-token: write       # OIDC for npm trusted publishing
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0    # semantic-release needs full history
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - run: npm install
+
+      - run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── Deploy demo to GitHub Pages — push to main only ──────────────────────────
+  deploy:
+    name: Deploy demo to GitHub Pages
+    needs: [test, e2e]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    # Only one Pages deployment at a time; don't cancel in-progress runs.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm install
+
+      - run: npm run build:demo
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist-demo
+
+      - uses: actions/deploy-pages@v4
+        id: deployment
