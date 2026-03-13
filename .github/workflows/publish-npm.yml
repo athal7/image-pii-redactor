@@ -8,9 +8,10 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment: npm-publish  # links to the npm trusted publisher config
     permissions:
       contents: read
-      id-token: write  # for npm provenance
+      id-token: write  # required for OIDC trusted publishing — no NPM_TOKEN needed
 
     steps:
       - uses: actions/checkout@v4
@@ -26,6 +27,7 @@ jobs:
 
       - run: npm run build
 
+      # Publishes using OIDC (no NPM_TOKEN secret required).
+      # npm verifies the GitHub Actions OIDC token and grants publish rights
+      # based on the trusted publisher config set up on npmjs.com.
       - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
