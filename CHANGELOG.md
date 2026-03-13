@@ -1,3 +1,11 @@
+## [0.3.6](https://github.com/athal7/image-pii-redactor/compare/v0.3.5...v0.3.6) (2026-03-13)
+
+
+### Bug Fixes
+
+* **demo:** left-align page header text and links ([941e374](https://github.com/athal7/image-pii-redactor/commit/941e37473696ed15655e68a90c75a6a758d871a7))
+* **docs:** remove downloads badge until package has history ([fa3ca77](https://github.com/athal7/image-pii-redactor/commit/fa3ca77bac26e6f523965c81bde3cd8ba2453293))
+
 ## [0.3.5](https://github.com/athal7/image-pii-redactor/compare/v0.3.4...v0.3.5) (2026-03-13)
 
 
