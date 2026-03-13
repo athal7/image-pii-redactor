@@ -51,13 +51,6 @@ export const redactorStyles = css`
     height: 18px;
   }
 
-  .trust-banner .network-count {
-    margin-left: auto;
-    font-variant-numeric: tabular-nums;
-    font-weight: 600;
-    white-space: nowrap;
-  }
-
   /* --- Drop zone --- */
   .dropzone {
     display: flex;
@@ -413,6 +406,17 @@ export const redactorStyles = css`
 
   .done-actions button.primary:hover {
     background: var(--accent-hover);
+  }
+
+  .done-network {
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .done-network-zero {
+    color: var(--success);
+    font-weight: 500;
   }
 
   /* --- Responsive --- */

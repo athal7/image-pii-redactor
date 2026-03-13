@@ -42,6 +42,7 @@ export class PiiRedactor extends LitElement {
   @property({ type: Number, attribute: "min-confidence" }) minConfidence =
     DEFAULTS.minConfidence;
 
+
   // --- Internal state ---
 
   @state() private phase: Phase = "idle";
@@ -61,6 +62,7 @@ export class PiiRedactor extends LitElement {
   @state() private drawCurrent: { x: number; y: number } | null = null;
   @state() private networkRequestCount = 0;
   @state() private redactedBlob: Blob | null = null;
+  @state() private modelCached = false;
 
   private imageFile: File | null = null;
   private imageElement: HTMLImageElement | null = null;
@@ -90,11 +92,38 @@ export class PiiRedactor extends LitElement {
         this.perfObserver = null;
       }
     }
+
+    // Silently preload the model in the background so it's cached by the
+    // time the user picks a file. Skip if the user is on a metered/slow
+    // connection or low battery — we'll download on demand with visible
+    // progress instead.
+    this.maybePreloadModel();
+  }
+
+  private async maybePreloadModel(): Promise<void> {
+    // Respect data-saver and slow connections
+    const conn = (navigator as any).connection;
+    if (conn) {
+      if (conn.saveData) return;
+      if (conn.effectiveType === "2g" || conn.effectiveType === "slow-2g") return;
+    }
+
+    // Respect low battery
+    if ("getBattery" in navigator) {
+      try {
+        const battery = await (navigator as any).getBattery();
+        if (!battery.charging && battery.level < 0.2) return;
+      } catch {
+        // getBattery not available or denied — continue with preload
+      }
+    }
+
+    preloadNerModel(this.nerModel).catch(() => {});
   }
 
   // --- Public methods ---
 
-  /** Pre-load AI models. Call this to warm up the cache ahead of time. */
+  /** Pre-load AI models imperatively. Call this to warm up the cache ahead of time. */
   async preload(): Promise<void> {
     await preloadNerModel(this.nerModel, (e) => this.handleProgress(e));
   }
@@ -152,9 +181,6 @@ export class PiiRedactor extends LitElement {
         ${shieldIcon}
         <span>Your data never leaves your device. All processing happens in
           your browser.</span>
-        <span class="network-count"
-          >Network: ${this.networkRequestCount} requests</span
-        >
       </div>
     `;
   }
@@ -341,6 +367,17 @@ export class PiiRedactor extends LitElement {
         files: [new File([this.redactedBlob], "redacted.png", { type: "image/png" })],
       });
 
+    const networkNote = this.networkRequestCount === 0
+      ? html`<p class="done-network done-network-zero">
+          Network requests to AI model host: 0 — served from local cache.
+        </p>`
+      : html`<p class="done-network">
+          Network requests to AI model host: ${this.networkRequestCount}.
+          ${this.modelCached
+            ? html`Model is now cached — next time will be 0.`
+            : nothing}
+        </p>`;
+
     return html`
       <div class="done">
         <div class="done-title">Redaction complete</div>
@@ -353,6 +390,7 @@ export class PiiRedactor extends LitElement {
             : nothing}
           <button @click=${this.reset}>Redact another</button>
         </div>
+        ${networkNote}
       </div>
     `;
   }
@@ -427,11 +465,33 @@ export class PiiRedactor extends LitElement {
       this.redactions = result.redactions;
       this.undoStack = [];
       this.phase = "reviewing";
+
+      // Check if model is now cached in a SW (for the done-screen hint)
+      this.checkModelCached();
     } catch (err) {
       console.error("Pipeline error:", err);
       this.errorMessage =
         err instanceof Error ? err.message : "An unexpected error occurred.";
       this.phase = "idle";
+    }
+  }
+
+  private async checkModelCached(): Promise<void> {
+    if (!("caches" in window)) return;
+    try {
+      // The SW caches HuggingFace model files under a known cache name.
+      // If any huggingface.co entry exists we know the model is cached.
+      const cacheNames = await caches.keys();
+      for (const name of cacheNames) {
+        const cache = await caches.open(name);
+        const keys = await cache.keys();
+        if (keys.some((r) => r.url.includes("huggingface.co"))) {
+          this.modelCached = true;
+          return;
+        }
+      }
+    } catch {
+      // Cache API blocked (e.g. private browsing on some browsers) — ignore
     }
   }
 
