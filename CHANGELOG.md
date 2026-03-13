@@ -1,3 +1,10 @@
+## [0.3.7](https://github.com/athal7/image-pii-redactor/compare/v0.3.6...v0.3.7) (2026-03-13)
+
+
+### Bug Fixes
+
+* close 8 open issues — regex FPs, missing property, env guard, labels, ESLint, cleanup ([887d64e](https://github.com/athal7/image-pii-redactor/commit/887d64ed1ea5f4fe1813023ab2c08137715e8957)), closes [#5](https://github.com/athal7/image-pii-redactor/issues/5) [#3](https://github.com/athal7/image-pii-redactor/issues/3) [#4](https://github.com/athal7/image-pii-redactor/issues/4) [#7](https://github.com/athal7/image-pii-redactor/issues/7) [#8](https://github.com/athal7/image-pii-redactor/issues/8) [#9](https://github.com/athal7/image-pii-redactor/issues/9) [#2](https://github.com/athal7/image-pii-redactor/issues/2) [#1](https://github.com/athal7/image-pii-redactor/issues/1)
+
 ## [0.3.6](https://github.com/athal7/image-pii-redactor/compare/v0.3.5...v0.3.6) (2026-03-13)
 
 
