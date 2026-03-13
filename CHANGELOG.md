@@ -1,3 +1,10 @@
+## [0.4.1](https://github.com/athal7/image-pii-redactor/compare/v0.4.0...v0.4.1) (2026-03-13)
+
+
+### Bug Fixes
+
+* **build:** add worker.format es to demo vite config ([a22bea4](https://github.com/athal7/image-pii-redactor/commit/a22bea431937c6ef4ebd360efe69c038c9db197b))
+
 # [0.4.0](https://github.com/athal7/image-pii-redactor/compare/v0.3.7...v0.4.0) (2026-03-13)
 
 
