@@ -209,7 +209,7 @@ export const redactorStyles = css`
   /* --- Toolbar --- */
   .toolbar {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 8px;
     padding: 8px;
     position: sticky;
@@ -221,9 +221,35 @@ export const redactorStyles = css`
     margin-bottom: 8px;
   }
 
+  .toolbar-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* Utility row: Add box, Undo, Select all, Deselect all */
+  .toolbar-utils {
+    flex-wrap: wrap;
+  }
+
+  /* Actions row: Cancel + Confirm always together, Confirm stretches to fill */
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .toolbar-actions .danger {
+    flex-shrink: 0;
+  }
+
+  .toolbar-actions .primary {
+    flex: 1;
+  }
+
   .toolbar button {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     padding: 8px 16px;
     font-size: 14px;
@@ -235,7 +261,6 @@ export const redactorStyles = css`
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s;
     -webkit-tap-highlight-color: transparent;
-    /* Touch-friendly minimum size */
     min-height: 44px;
     min-width: 44px;
   }
@@ -272,10 +297,6 @@ export const redactorStyles = css`
     background: var(--accent);
     color: white;
     border-color: var(--accent);
-  }
-
-  .toolbar .spacer {
-    flex: 1;
   }
 
   /* --- Entity list (bottom sheet on mobile, sidebar on desktop) --- */
@@ -434,6 +455,21 @@ export const redactorStyles = css`
 
     .toolbar {
       grid-column: 1 / -1;
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .toolbar-utils {
+      flex: 1;
+      flex-wrap: nowrap;
+    }
+
+    .toolbar-actions {
+      flex-shrink: 0;
+    }
+
+    .toolbar-actions .primary {
+      flex: none;
     }
 
     .entity-list {

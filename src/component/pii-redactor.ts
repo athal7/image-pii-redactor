@@ -242,34 +242,29 @@ export class PiiRedactor extends LitElement {
     return html`
       <div class="editor">
         <div class="toolbar">
-          <button
-            class="${this.drawMode ? "active" : ""}"
-            @click=${this.toggleDrawMode}
-            title="Draw a redaction box manually"
-          >
-            ${this.drawMode ? "Drawing..." : "+ Add box"}
-          </button>
-          <button
-            @click=${this.handleUndo}
-            ?disabled=${this.undoStack.length === 0}
-          >
-            Undo
-          </button>
-          <button
-            @click=${this.handleSelectAll}
-          >
-            Select all
-          </button>
-          <button
-            @click=${this.handleDeselectAll}
-          >
-            Deselect all
-          </button>
-          <span class="spacer"></span>
-          <button class="danger" @click=${this.handleCancel}>Cancel</button>
-          <button class="primary" @click=${this.handleConfirm}>
-            Confirm &amp; redact
-          </button>
+          <div class="toolbar-row toolbar-utils">
+            <button
+              class="${this.drawMode ? "active" : ""}"
+              @click=${this.toggleDrawMode}
+              title="Draw a redaction box manually"
+            >
+              ${this.drawMode ? "Drawing..." : "+ Add box"}
+            </button>
+            <button
+              @click=${this.handleUndo}
+              ?disabled=${this.undoStack.length === 0}
+            >
+              Undo
+            </button>
+            <button @click=${this.handleSelectAll}>Select all</button>
+            <button @click=${this.handleDeselectAll}>Deselect all</button>
+          </div>
+          <div class="toolbar-row toolbar-actions">
+            <button class="danger" @click=${this.handleCancel}>Cancel</button>
+            <button class="primary" @click=${this.handleConfirm}>
+              Confirm &amp; redact
+            </button>
+          </div>
         </div>
 
         <div class="viewport">
