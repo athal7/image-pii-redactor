@@ -1,3 +1,10 @@
+## [0.1.1](https://github.com/athal7/image-pii-redactor/compare/v0.1.0...v0.1.1) (2026-03-13)
+
+
+### Bug Fixes
+
+* **component:** always disable viewport scroll to fix touch tap on boxes ([cf5f647](https://github.com/athal7/image-pii-redactor/commit/cf5f6475c3b07e40e7b7a3a51402db21f65e1b80))
+
 ## [0.1.0](https://github.com/athal7/image-pii-redactor/releases/tag/v0.1.0) (2026-03-13)
 
 ### Features
