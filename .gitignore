@@ -3,6 +3,10 @@ dist/
 *.tsbuildinfo
 .vite/
 
+# package-lock.json contains sha512 integrity hashes which trip secrets scanners.
+# For a library package (not an app), lockfile is optional in git.
+package-lock.json
+
 # Playwright test artifacts
 playwright-report/
 test-results/
