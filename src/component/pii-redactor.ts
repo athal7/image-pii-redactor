@@ -151,7 +151,6 @@ export class PiiRedactor extends LitElement {
           class="file-input"
           type="file"
           accept="image/png,image/jpeg,image/webp"
-          capture="environment"
           @change=${this.handleFileSelect}
         />
       </div>
