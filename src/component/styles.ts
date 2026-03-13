@@ -169,8 +169,14 @@ export const redactorStyles = css`
     left: 0;
     width: 100%;
     height: 100%;
-    /* Inherit touch-action from .viewport so the scroll container controls it */
-    touch-action: inherit;
+    touch-action: pan-x pan-y;
+  }
+
+  /* In draw mode there's no scroll container clipping the SVG, so
+     touch-action:none on the SVG itself is sufficient to block the
+     page scroll gesture and let the draw drag register. */
+  .viewport svg.draw-mode {
+    touch-action: none;
   }
 
   .viewport svg rect.redaction-box {
