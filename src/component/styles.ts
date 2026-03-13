@@ -142,18 +142,9 @@ export const redactorStyles = css`
 
   .viewport {
     position: relative;
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
     background: #e5e5e5;
     border-radius: var(--radius);
     border: 1px solid var(--border);
-    /* On mobile, constrain height to viewport */
-    max-height: 60vh;
-    max-height: 60dvh;
-    /* Disable scroll gestures on the viewport — the image scales to fit
-       so internal scroll isn't useful, and pan-x pan-y was causing touch
-       taps on redaction boxes to scroll instead of register as clicks. */
-    touch-action: none;
   }
 
   .viewport-inner {
@@ -430,10 +421,6 @@ export const redactorStyles = css`
 
     .toolbar {
       grid-column: 1 / -1;
-    }
-
-    .viewport {
-      max-height: 70vh;
     }
 
     .entity-list {
