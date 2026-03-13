@@ -1,3 +1,10 @@
+## [0.3.3](https://github.com/athal7/image-pii-redactor/compare/v0.3.2...v0.3.3) (2026-03-13)
+
+
+### Bug Fixes
+
+* **component:** make toolbar sticky so controls stay visible while scrolling ([dec07a9](https://github.com/athal7/image-pii-redactor/commit/dec07a97f46ae5c08c0e6ae22cd8694c7103b9b0))
+
 ## [0.3.2](https://github.com/athal7/image-pii-redactor/compare/v0.3.1...v0.3.2) (2026-03-13)
 
 
