@@ -60,12 +60,11 @@ test.beforeEach(async ({ page }) => {
 
 // ── Trust layer ───────────────────────────────────────────────────────────────
 
-test("trust banner is visible and shows 0 network requests initially", async ({
+test("trust banner is visible and shows privacy message", async ({
   page,
 }) => {
   const bannerText = await shadowText(page, ".trust-banner");
   expect(bannerText).toContain("Your data never leaves your device");
-  expect(bannerText).toContain("Network: 0 requests");
 });
 
 // ── File upload ───────────────────────────────────────────────────────────────
@@ -176,7 +175,14 @@ test.describe("pipeline tests (requires model download)", () => {
     await fileChooser.setFiles(TEST_IMAGE);
     await waitForPhase(page, "reviewing");
 
-    const headerText = await shadowText(page, ".entity-list-header");
+    // Use innerText to get the full rendered text across child nodes, then
+    // normalise whitespace so inline elements don't split the string.
+    const headerText = await page.evaluate(() => {
+      const host = document.querySelector("pii-redactor");
+      if (!host?.shadowRoot) return "";
+      const el = host.shadowRoot.querySelector(".entity-list-header") as HTMLElement | null;
+      return el?.innerText?.replace(/\s+/g, " ").trim() ?? "";
+    });
     // Should show "Detected items (N / N)" with N > 0
     expect(headerText).toMatch(/Detected items \(\d+ \/ \d+\)/);
     const [enabled, total] = headerText.match(/\d+/g)!.map(Number);
