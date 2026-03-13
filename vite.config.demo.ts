@@ -12,6 +12,11 @@ import { resolve } from "path";
 export default defineConfig({
   root: "demo",
   base: "/image-pii-redactor/", // GitHub Pages repo subdirectory
+  worker: {
+    // Use ES module format for workers so dynamic imports (Transformers.js)
+    // work correctly. IIFE format doesn't support code-splitting.
+    format: "es",
+  },
   resolve: {
     alias: {
       // Point the demo's `../src/index.ts` import at the real source
