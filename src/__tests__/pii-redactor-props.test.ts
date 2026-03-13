@@ -35,4 +35,14 @@ describe("PiiRedactor property declarations", () => {
     const element = new PiiRedactor();
     expect((element as any).useRegex).toBe(true);
   });
+
+  it("useCompromise is declared as a Lit property (has @property decorator)", () => {
+    const observed = PiiRedactor.observedAttributes;
+    expect(observed).toContain("use-compromise");
+  });
+
+  it("useCompromise defaults to true", () => {
+    const element = new PiiRedactor();
+    expect((element as any).useCompromise).toBe(true);
+  });
 });

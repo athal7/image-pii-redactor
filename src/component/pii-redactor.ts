@@ -41,6 +41,8 @@ export class PiiRedactor extends LitElement {
     DEFAULTS.minConfidence;
   @property({ type: Boolean, attribute: "use-regex" }) useRegex =
     DEFAULTS.useRegex;
+  @property({ type: Boolean, attribute: "use-compromise" }) useCompromise =
+    DEFAULTS.useCompromise;
 
   // --- Internal state ---
 
@@ -452,6 +454,7 @@ export class PiiRedactor extends LitElement {
         nerModel: this.nerModel,
         minConfidence: this.minConfidence,
         useRegex: this.useRegex,
+        useCompromise: this.useCompromise,
       };
 
       const result = await analyzeImage(file, config, (e) =>
