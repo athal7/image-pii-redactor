@@ -11,7 +11,7 @@ import { resolve } from "path";
  */
 export default defineConfig({
   root: "demo",
-  base: "/image-pii-redactor/", // GitHub Pages repo subdirectory
+  base: process.env.VITE_BASE ?? "/image-pii-redactor/", // GitHub Pages repo subdirectory
   worker: {
     // Use ES module format for workers so dynamic imports (Transformers.js)
     // work correctly. IIFE format doesn't support code-splitting.

@@ -51,12 +51,16 @@ jobs:
 
       - name: Build demo
         run: npm run build:demo
+        env:
+          # Build with base=/ so assets resolve correctly when served from root in CI.
+          # The GitHub Pages deploy uses the default base (/image-pii-redactor/).
+          VITE_BASE: /
 
       - name: Serve demo and run e2e tests
         run: |
           npx serve -l 5173 dist-demo &
           sleep 2
-          VITE_RUNNING=1 PLAYWRIGHT_USER_DATA_DIR=/tmp/pw-model-cache npx playwright test
+          VITE_RUNNING=1 DEMO_URL=/ PLAYWRIGHT_USER_DATA_DIR=/tmp/pw-model-cache npx playwright test
 
   # ── Release (npm publish via semantic-release) — push to main only ───────────
   release:

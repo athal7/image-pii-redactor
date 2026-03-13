@@ -14,7 +14,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DEMO_URL = "/demo/";
+const DEMO_URL = process.env.DEMO_URL ?? "/demo/";
 const TEST_IMAGE = path.resolve(__dirname, "../../demo/test-screenshot.png");
 
 // Helper: get a property from inside the Shadow DOM
