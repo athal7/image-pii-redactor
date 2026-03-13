@@ -1,20 +1,23 @@
-name: Publish to npm
+name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
 
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
-    environment: npm-publish  # links to the npm trusted publisher config
+    environment: npm-publish
     permissions:
-      contents: read
-      id-token: write  # required for OIDC trusted publishing — no NPM_TOKEN needed
+      contents: write       # push release commit + tag
+      issues: write         # comment on issues
+      pull-requests: write  # comment on PRs
+      id-token: write       # OIDC for npm trusted publishing
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0    # semantic-release needs full history
 
       - uses: actions/setup-node@v4
         with:
@@ -25,9 +28,6 @@ jobs:
 
       - run: npm test
 
-      - run: npm run build
-
-      # Publishes using OIDC (no NPM_TOKEN secret required).
-      # npm verifies the GitHub Actions OIDC token and grants publish rights
-      # based on the trusted publisher config set up on npmjs.com.
-      - run: npm publish --provenance --access public
+      - run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
