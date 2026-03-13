@@ -71,14 +71,20 @@ export class PiiRedactor extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    // Count real network requests so the trust banner shows live data.
-    // PerformanceObserver is available in all modern browsers.
+    // Count outbound network requests to HuggingFace CDN (model downloads)
+    // so the trust banner shows real data. buffered:false means we only see
+    // requests that happen after the component connects — not page-load assets.
     if (typeof PerformanceObserver !== "undefined") {
-      this.perfObserver = new PerformanceObserver(() => {
-        this.networkRequestCount++;
+      this.perfObserver = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          const url = (entry as PerformanceResourceTiming).name ?? "";
+          if (url.includes("huggingface.co") || url.includes("hf.co")) {
+            this.networkRequestCount++;
+          }
+        }
       });
       try {
-        this.perfObserver.observe({ type: "resource", buffered: true });
+        this.perfObserver.observe({ type: "resource", buffered: false });
       } catch {
         // Some environments don't support resource timing — ignore
         this.perfObserver = null;
@@ -393,6 +399,7 @@ export class PiiRedactor extends LitElement {
     }
 
     this.errorMessage = "";
+    this.networkRequestCount = 0;
     this.imageFile = file;
     this.imageUrl = URL.createObjectURL(file);
     this.phase = "loading";
