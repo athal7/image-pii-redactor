@@ -44,6 +44,18 @@ export class PiiRedactor extends LitElement {
   @property({ type: Boolean, attribute: "use-compromise" }) useCompromise =
     DEFAULTS.useCompromise;
 
+  // --- Pipeline config (derived from public properties) ---
+
+  private get pipelineConfig(): RedactorConfig {
+    return {
+      lang: this.lang,
+      nerModel: this.nerModel,
+      minConfidence: this.minConfidence,
+      useRegex: this.useRegex,
+      useCompromise: this.useCompromise,
+    };
+  }
+
   // --- Internal state ---
 
   @state() private phase: Phase = "idle";
@@ -449,15 +461,7 @@ export class PiiRedactor extends LitElement {
       this.imageHeight = img.naturalHeight;
 
       // Run the pipeline
-      const config: RedactorConfig = {
-        lang: this.lang,
-        nerModel: this.nerModel,
-        minConfidence: this.minConfidence,
-        useRegex: this.useRegex,
-        useCompromise: this.useCompromise,
-      };
-
-      const result = await analyzeImage(file, config, (e) =>
+      const result = await analyzeImage(file, this.pipelineConfig, (e) =>
         this.handleProgress(e),
       );
 
