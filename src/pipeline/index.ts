@@ -17,12 +17,14 @@ import { detectPiiNer, releaseNerModel } from "./pii-ner.js";
 import { detectPiiRegex } from "./pii-regex.js";
 import { detectPiiCompromise } from "./pii-compromise.js";
 import { entitiesToRedactions, mergeEntities } from "./bridge.js";
+import { detectAvatars, makeCanvasVarianceFn } from "./avatar-detect.js";
 
 export { runOcr } from "./ocr.js";
 export { detectPiiNer, preloadNerModel, releaseNerModel } from "./pii-ner.js";
 export { detectPiiRegex } from "./pii-regex.js";
 export { detectPiiCompromise } from "./pii-compromise.js";
 export { entitiesToRedactions, mergeEntities } from "./bridge.js";
+export { detectAvatars, makeCanvasVarianceFn } from "./avatar-detect.js";
 export { renderRedactedImage, drawRedactionPreview } from "./redact.js";
 export { preprocessForOcr, computeAverageLuminance, isDarkBackground, sampleDistributedPixels, DARK_THRESHOLD } from "./preprocess.js";
 
@@ -81,6 +83,25 @@ export async function analyzeImage(
 
   // Step 4: Map to image bounding boxes
   const redactions = entitiesToRedactions(entities, ocr.words, ocr.imageWidth, ocr.imageHeight);
+
+  // Step 5: Detect avatars near detected person names (Canvas-based heuristic)
+  if (cfg.detectAvatars) {
+    const personRedactions = redactions.filter((r) =>
+      r.label && ["GIVENNAME", "SURNAME", "PERSON"].includes(r.label),
+    );
+    if (personRedactions.length > 0) {
+      // Resolve the image to a form that can be drawn to OffscreenCanvas
+      let drawableImage: ImageBitmap | HTMLImageElement;
+      if (image instanceof Blob) {
+        drawableImage = await createImageBitmap(image);
+      } else {
+        drawableImage = image;
+      }
+      const getVariance = makeCanvasVarianceFn(drawableImage, ocr.imageWidth, ocr.imageHeight);
+      const avatarRedactions = detectAvatars(personRedactions, ocr.imageWidth, ocr.imageHeight, getVariance);
+      redactions.push(...avatarRedactions);
+    }
+  }
 
   onProgress?.({
     phase: "reviewing",

@@ -128,6 +128,8 @@ export interface RedactorConfig {
   useRegex?: boolean;
   /** Whether to run compromise-based person name detection in addition to NER. Default: true. */
   useCompromise?: boolean;
+  /** Whether to detect and redact avatar images near detected person names. Default: true. */
+  detectAvatars?: boolean;
   /**
    * Memory mode for constrained devices.
    *
@@ -160,6 +162,7 @@ export const LABEL_DISPLAY_NAMES: Record<string, string> = {
   URL:          "URL",
   USERNAME:     "Username",
   IP_ADDRESS:   "IP address",
+  AVATAR:       "Profile picture",
   MANUAL:       "Manual redaction",
 };
 
@@ -171,5 +174,6 @@ export const DEFAULT_CONFIG: Required<RedactorConfig> = {
   minConfidence: 0.7,
   useRegex: true,
   useCompromise: true,
+  detectAvatars: true,
   memoryMode: "auto",
 };

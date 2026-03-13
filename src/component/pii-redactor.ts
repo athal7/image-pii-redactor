@@ -43,6 +43,8 @@ export class PiiRedactor extends LitElement {
     DEFAULTS.useRegex;
   @property({ type: Boolean, attribute: "use-compromise" }) useCompromise =
     DEFAULTS.useCompromise;
+  @property({ type: Boolean, attribute: "detect-avatars" }) detectAvatars =
+    DEFAULTS.detectAvatars;
 
   // --- Pipeline config (derived from public properties) ---
 
@@ -53,6 +55,7 @@ export class PiiRedactor extends LitElement {
       minConfidence: this.minConfidence,
       useRegex: this.useRegex,
       useCompromise: this.useCompromise,
+      detectAvatars: this.detectAvatars,
     };
   }
 
