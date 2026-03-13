@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.vite/
+
+# Playwright test artifacts
+playwright-report/
+test-results/
+
+# Misc
+.DS_Store

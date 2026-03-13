@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Image PII Redactor — Demo</title>
+
+  <!--
+    TRUST LAYER: Content Security Policy
+    After the page and models are loaded, connect-src is restricted.
+    In production, the two-phase approach would use 'none' on the app page.
+    For the dev demo, we allow localhost + HuggingFace CDN for model downloads.
+  -->
+  <!--
+    TRUST LAYER: Content Security Policy
+    In dev/demo mode, we allow the CDNs needed for model + worker downloads.
+    In production two-phase mode, the app page would use connect-src 'none'
+    after models are cached.
+  -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' 'unsafe-inline' blob:;
+                 script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net;
+                 worker-src 'self' blob:;
+                 connect-src 'self' https://cdn.jsdelivr.net https://cdn-lfs.hf.co https://cdn-lfs-us-1.hf.co https://cdn-lfs-eu-1.hf.co https://huggingface.co https://*.huggingface.co https://*.xethub.hf.co https://cas-bridge.xethub.hf.co blob:;
+                 img-src 'self' blob: data:;">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fafbfc;
+      color: #1a1a2e;
+    }
+
+    .page-header {
+      max-width: 720px;
+      margin: 0 auto 24px;
+      text-align: center;
+    }
+
+    .page-header h1 {
+      font-size: 24px;
+      margin: 0 0 8px;
+    }
+
+    .page-header p {
+      font-size: 15px;
+      color: #656d76;
+      margin: 0;
+    }
+
+    pii-redactor {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .output {
+      max-width: 720px;
+      margin: 24px auto;
+      padding: 16px;
+      border: 1px solid #d0d7de;
+      border-radius: 8px;
+      background: #fff;
+      display: none;
+    }
+
+    .output.visible {
+      display: block;
+    }
+
+    .output h2 {
+      font-size: 16px;
+      margin: 0 0 12px;
+    }
+
+    .output img {
+      max-width: 100%;
+      border-radius: 4px;
+      border: 1px solid #e5e5e5;
+    }
+
+    .output .meta {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #656d76;
+    }
+
+    .airplane-hint {
+      max-width: 720px;
+      margin: 16px auto;
+      padding: 12px 16px;
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #6d5e00;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <h1>Image PII Redactor</h1>
+    <p>Upload a screenshot of an AI conversation. Personal information will be
+      detected and redacted — entirely in your browser.</p>
+  </div>
+
+  <div class="airplane-hint">
+    Try it: after models load the first time, turn on <strong>Airplane Mode</strong>.
+    Everything still works. Your data never leaves your device.
+  </div>
+
+  <pii-redactor></pii-redactor>
+
+  <div class="output" id="output">
+    <h2>Redacted image</h2>
+    <img id="output-img" alt="Redacted screenshot">
+    <div class="meta" id="output-meta"></div>
+  </div>
+
+  <script type="module">
+    import "../src/index.ts";
+
+    const redactor = document.querySelector("pii-redactor");
+    const output = document.getElementById("output");
+    const outputImg = document.getElementById("output-img");
+    const outputMeta = document.getElementById("output-meta");
+
+    redactor.addEventListener("redaction-complete", (e) => {
+      const { blob, entities, width, height } = e.detail;
+
+      // Show the redacted image
+      outputImg.src = URL.createObjectURL(blob);
+      output.classList.add("visible");
+
+      const size = (blob.size / 1024).toFixed(1);
+      const entityCount = entities.length;
+      outputMeta.textContent =
+        `${width}x${height} — ${size}KB — ${entityCount} item(s) redacted`;
+
+      // Reset the component for another upload
+      redactor.reset();
+    });
+
+    redactor.addEventListener("redaction-cancel", () => {
+      output.classList.remove("visible");
+    });
+
+    redactor.addEventListener("error", (e) => {
+      console.error("Redactor error:", e.detail.message);
+    });
+  </script>
+</body>
+</html>
