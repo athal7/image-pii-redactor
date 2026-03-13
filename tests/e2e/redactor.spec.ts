@@ -256,12 +256,11 @@ test.describe("pipeline tests (requires model download)", () => {
       )?.click();
     });
 
-    // Wait for the event
+    // Wait for the component to set window.__redactionDone (set after firing
+    // the redaction-complete event), then verify the event was received.
     await page.waitForFunction(() => (window as any).__redactionDone, {
       timeout: 30_000,
-    }).catch(() => {}); // exposeFunction handles it
-
-    await page.waitForTimeout(3_000);
+    });
     expect(eventFired).toBe(true);
     expect(blobSize).toBeGreaterThan(1000); // Must be a real PNG, not empty
   });

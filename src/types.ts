@@ -139,6 +139,27 @@ export interface RedactorConfig {
   memoryMode?: "auto" | "low" | "normal";
 }
 
+/**
+ * Human-readable display names for NER entity labels.
+ * Used in the review UI to replace raw model labels with user-friendly text.
+ */
+export const LABEL_DISPLAY_NAMES: Record<string, string> = {
+  GIVENNAME:    "First name",
+  SURNAME:      "Last name",
+  EMAIL:        "Email address",
+  TELEPHONENUM: "Phone number",
+  STREET:       "Street address",
+  CITY:         "City",
+  ZIPCODE:      "ZIP code",
+  SSN:          "Social Security Number",
+  CREDITCARD:   "Credit card number",
+  DATE:         "Date",
+  URL:          "URL",
+  USERNAME:     "Username",
+  IP_ADDRESS:   "IP address",
+  MANUAL:       "Manual redaction",
+};
+
 export const DEFAULT_CONFIG: Required<RedactorConfig> = {
   lang: "eng",
   nerModel: "onnx-community/multilang-pii-ner-ONNX",

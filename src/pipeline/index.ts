@@ -13,10 +13,9 @@ import type {
   RedactorConfig,
 } from "../types.js";
 import { runOcr } from "./ocr.js";
-import { detectPiiNer, preloadNerModel, releaseNerModel } from "./pii-ner.js";
+import { detectPiiNer, releaseNerModel } from "./pii-ner.js";
 import { detectPiiRegex } from "./pii-regex.js";
 import { entitiesToRedactions, mergeEntities } from "./bridge.js";
-import { renderRedactedImage } from "./redact.js";
 
 export { runOcr } from "./ocr.js";
 export { detectPiiNer, preloadNerModel, releaseNerModel } from "./pii-ner.js";

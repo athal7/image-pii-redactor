@@ -28,15 +28,20 @@ const PII_PATTERNS: PiiPattern[] = [
     label: "TELEPHONENUM",
     pattern: /\+\d{1,3}[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}/g,
   },
-  // Social Security Numbers (US)
+  // Social Security Numbers (US) — require consistent separators between all
+  // groups (backreference) to avoid matching zip+4 codes like 94102-1234
+  // (which would parse as 941-02-1234 with mixed separators).
   {
     label: "SSN",
-    pattern: /\b\d{3}[-.\s]?\d{2}[-.\s]?\d{4}\b/g,
+    pattern: /\b\d{3}([-.\s])\d{2}\1\d{4}\b/g,
   },
-  // Credit card numbers (basic — 13-19 digits with optional separators)
+  // Credit card numbers — require exactly 4 groups of 4 digits with a
+  // consistent separator char (space, hyphen, or dot) OR 16 consecutive
+  // digits (OCR may strip spaces). This avoids matching SSNs (9 digits)
+  // and phone numbers (10 digits with different groupings).
   {
     label: "CREDITCARD",
-    pattern: /\b(?:\d{4}[-.\s]?){3,4}\d{1,4}\b/g,
+    pattern: /\b\d{4}([ .-])\d{4}\1\d{4}\1\d{4}\b|\b\d{16}\b/g,
   },
   // IP addresses (v4)
   {

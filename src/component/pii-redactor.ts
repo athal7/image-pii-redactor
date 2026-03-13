@@ -1,4 +1,4 @@
-import { LitElement, html, svg, nothing, type PropertyValues } from "lit";
+import { LitElement, html, svg, nothing } from "lit";
 import { customElement, property, state, query } from "lit/decorators.js";
 import { redactorStyles } from "./styles.js";
 import { shieldIcon, uploadIcon } from "./icons.js";
@@ -13,10 +13,8 @@ import type {
   RedactorConfig,
   RedactionResult,
   ProgressEvent,
-  BBox,
-  DEFAULT_CONFIG,
 } from "../types.js";
-import { DEFAULT_CONFIG as DEFAULTS } from "../types.js";
+import { DEFAULT_CONFIG as DEFAULTS, LABEL_DISPLAY_NAMES } from "../types.js";
 
 /**
  * <pii-redactor> — Client-side PII redaction for screenshot images.
@@ -41,7 +39,8 @@ export class PiiRedactor extends LitElement {
     DEFAULTS.maxFileSize;
   @property({ type: Number, attribute: "min-confidence" }) minConfidence =
     DEFAULTS.minConfidence;
-
+  @property({ type: Boolean, attribute: "use-regex" }) useRegex =
+    DEFAULTS.useRegex;
 
   // --- Internal state ---
 
@@ -146,6 +145,9 @@ export class PiiRedactor extends LitElement {
     }
     this.imageElement = null;
     this.redactedBlob = null;
+    // Reset e2e test sentinel so it can be polled again if the user redacts
+    // another image in the same page session.
+    delete (window as any).__redactionDone;
   }
 
   override disconnectedCallback(): void {
@@ -295,7 +297,7 @@ export class PiiRedactor extends LitElement {
                     data-id=${r.id}
                     @click=${(e: Event) => this.handleRedactionClick(e, r.id)}
                   >
-                    <title>${r.label ?? "Redaction"}: ${r.enabled ? "enabled" : "disabled"}</title>
+                    <title>${this.getDisplayLabel(r.label)}: ${r.enabled ? "enabled" : "disabled"}</title>
                   </rect>
                 `,
               )}
@@ -331,7 +333,7 @@ export class PiiRedactor extends LitElement {
                       (e.target as HTMLInputElement).checked,
                     )}
                 />
-                <span class="entity-label">${r.label ?? "manual"}</span>
+                <span class="entity-label">${this.getDisplayLabel(r.label)}</span>
                 <span class="entity-text"
                   >${this.getRedactionText(r)}</span
                 >
@@ -449,6 +451,7 @@ export class PiiRedactor extends LitElement {
         lang: this.lang,
         nerModel: this.nerModel,
         minConfidence: this.minConfidence,
+        useRegex: this.useRegex,
       };
 
       const result = await analyzeImage(file, config, (e) =>
@@ -594,7 +597,7 @@ export class PiiRedactor extends LitElement {
     e.preventDefault();
   }
 
-  private handleSvgPointerUp(e: PointerEvent) {
+  private handleSvgPointerUp(_e: PointerEvent) {
     if (!this.isDrawing || !this.drawStart || !this.drawCurrent) return;
 
     const x0 = Math.min(this.drawStart.x, this.drawCurrent.x);
@@ -652,6 +655,10 @@ export class PiiRedactor extends LitElement {
         }),
       );
 
+      // Signal completion for e2e tests that poll window.__redactionDone.
+      // This is set after the event so listeners fire before the flag is raised.
+      (window as any).__redactionDone = true;
+
       this.redactedBlob = result.blob;
       this.phase = "done";
     } catch (err) {
@@ -701,6 +708,12 @@ export class PiiRedactor extends LitElement {
   }
 
   // --- Helpers ---
+
+  /** Returns a user-friendly label for an entity type. */
+  private getDisplayLabel(label: string | undefined): string {
+    if (!label) return "Manual redaction";
+    return LABEL_DISPLAY_NAMES[label] ?? label;
+  }
 
   private getRedactionText(r: Redaction): string {
     if (r.source === "manual") return "(manually drawn)";

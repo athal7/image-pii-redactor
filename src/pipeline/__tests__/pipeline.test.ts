@@ -7,7 +7,7 @@
  *  - empty / edge-case inputs are handled gracefully
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import type { OcrResult, PiiEntity } from "../../types.js";
 import { entitiesToRedactions, mergeEntities } from "../bridge.js";
 import { detectPiiRegex } from "../pii-regex.js";

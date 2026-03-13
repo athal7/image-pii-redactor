@@ -1,4 +1,4 @@
-import type { BBox, Redaction, RedactionResult } from "../types.js";
+import type { Redaction, RedactionResult } from "../types.js";
 
 /**
  * Render the original image with redaction boxes burned in.

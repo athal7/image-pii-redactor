@@ -5,6 +5,11 @@ import type { PiiEntity, ProgressEvent } from "../types.js";
 let pipelineInstance: any = null;
 let pipelineModelId: string | null = null;
 
+// Track whether we have already configured the Transformers.js environment.
+// The env object comes from a dynamic import so configuration happens on first
+// pipeline load, but we ensure it runs exactly once — not on every call.
+let envConfigured = false;
+
 interface RawNerToken {
   entity: string;
   entity_group?: string;
@@ -171,7 +176,7 @@ function aggregateAndMapTokens(
 
   // Don't forget the last group
   if (currentGroup.length > 0) {
-    const merged = mergeTokenGroup(currentGroup, currentType, text, idCounter++, minConfidence);
+    const merged = mergeTokenGroup(currentGroup, currentType, text, idCounter, minConfidence);
     if (merged) entities.push(merged);
   }
 
@@ -304,8 +309,13 @@ async function loadPipeline(
   // Dynamic import — only load Transformers.js when needed
   const { pipeline, env } = await import("@xenova/transformers");
 
-  // Attempt WebGPU, fall back gracefully
-  env.allowLocalModels = false;
+  // Configure the global env exactly once (not on every pipeline load).
+  // Disabling local models ensures the library always fetches from HuggingFace
+  // CDN rather than attempting a local filesystem lookup that fails in browsers.
+  if (!envConfigured) {
+    env.allowLocalModels = false;
+    envConfigured = true;
+  }
 
   // On mobile, skip the WebGPU probe (adds latency + often falls back anyway)
   // and go straight to WASM. On desktop, "auto" tries WebGPU first.

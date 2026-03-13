@@ -7,11 +7,10 @@
  * environments with and without SW support.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   registerServiceWorker,
   unregisterServiceWorker,
-  type SwRegistrationOptions,
 } from "../sw-registration.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
