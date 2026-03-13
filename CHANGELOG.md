@@ -1,3 +1,10 @@
+## [0.3.2](https://github.com/athal7/image-pii-redactor/compare/v0.3.1...v0.3.2) (2026-03-13)
+
+
+### Bug Fixes
+
+* **component:** restore touch-action:none on SVG in draw mode ([42e7eae](https://github.com/athal7/image-pii-redactor/commit/42e7eae1b63f02818a05a111b9504c5aa71ff254))
+
 ## [0.3.1](https://github.com/athal7/image-pii-redactor/compare/v0.3.0...v0.3.1) (2026-03-13)
 
 
