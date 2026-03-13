@@ -157,7 +157,10 @@ export const redactorStyles = css`
     /* On mobile, constrain height to viewport */
     max-height: 60vh;
     max-height: 60dvh;
-    touch-action: pan-x pan-y;
+    /* Disable scroll gestures on the viewport — the image scales to fit
+       so internal scroll isn't useful, and pan-x pan-y was causing touch
+       taps on redaction boxes to scroll instead of register as clicks. */
+    touch-action: none;
   }
 
   .viewport-inner {
@@ -184,13 +187,6 @@ export const redactorStyles = css`
     height: 100%;
     /* Inherit touch-action from .viewport so the scroll container controls it */
     touch-action: inherit;
-  }
-
-  /* When draw mode is active, block scroll on the scroll CONTAINER itself.
-     touch-action on a child cannot override a permissive ancestor — the
-     browser's gesture recogniser respects the container's declaration first. */
-  .viewport.draw-mode {
-    touch-action: none;
   }
 
   .viewport svg rect.redaction-box {

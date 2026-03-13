@@ -237,7 +237,7 @@ export class PiiRedactor extends LitElement {
           </button>
         </div>
 
-        <div class="viewport ${this.drawMode ? "draw-mode" : ""}">
+        <div class="viewport">
           <div class="viewport-inner">
             <img
               src=${this.imageUrl}
