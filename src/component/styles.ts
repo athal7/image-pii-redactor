@@ -182,6 +182,13 @@ export const redactorStyles = css`
     left: 0;
     width: 100%;
     height: 100%;
+    /* Default: allow scroll gestures to pass through */
+    touch-action: pan-x pan-y;
+  }
+
+  /* When draw mode is active, block scroll so the drag gesture is captured */
+  .viewport svg.draw-mode {
+    touch-action: none;
   }
 
   .viewport svg rect.redaction-box {

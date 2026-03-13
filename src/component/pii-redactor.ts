@@ -225,12 +225,14 @@ export class PiiRedactor extends LitElement {
               @load=${this.handleImageLoad}
             />
             <svg
+              class=${this.drawMode ? "draw-mode" : ""}
               viewBox=${vb}
               preserveAspectRatio="xMidYMid meet"
               xmlns="http://www.w3.org/2000/svg"
               @pointerdown=${this.handleSvgPointerDown}
               @pointermove=${this.handleSvgPointerMove}
               @pointerup=${this.handleSvgPointerUp}
+              @pointercancel=${this.handleSvgPointerCancel}
             >
               ${this.redactions.map(
                 (r) => svg`
@@ -507,6 +509,14 @@ export class PiiRedactor extends LitElement {
     this.drawStart = null;
     this.drawCurrent = null;
     this.drawMode = false;
+  }
+
+  private handleSvgPointerCancel() {
+    // Touch was interrupted (e.g. incoming call, scroll takeover) — abort draw
+    this.isDrawing = false;
+    this.drawStart = null;
+    this.drawCurrent = null;
+    // Keep drawMode on so the user can try again
   }
 
   // --- Actions ---
