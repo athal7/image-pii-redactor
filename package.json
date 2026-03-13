@@ -1,6 +1,6 @@
 {
   "name": "image-pii-redactor",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Client-side PII redaction for screenshot images. OCR + NER in the browser — your data never leaves your device.",
   "type": "module",
   "main": "dist/image-pii-redactor.js",

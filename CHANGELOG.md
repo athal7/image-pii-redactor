@@ -1,3 +1,10 @@
+## [0.3.5](https://github.com/athal7/image-pii-redactor/compare/v0.3.4...v0.3.5) (2026-03-13)
+
+
+### Bug Fixes
+
+* **demo:** clean up page, add GitHub and npm links ([4ae8d8a](https://github.com/athal7/image-pii-redactor/commit/4ae8d8aeccfe2e47eaeba94c66b566e7c09035d3))
+
 ## [0.3.4](https://github.com/athal7/image-pii-redactor/compare/v0.3.3...v0.3.4) (2026-03-13)
 
 
