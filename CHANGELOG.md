@@ -1,3 +1,10 @@
+# [0.2.0](https://github.com/athal7/image-pii-redactor/compare/v0.1.1...v0.2.0) (2026-03-13)
+
+
+### Features
+
+* **component:** add download and share after redaction ([e168ca6](https://github.com/athal7/image-pii-redactor/commit/e168ca68b5acb99ecd6c01b21527cec9a53d513f))
+
 ## [0.1.1](https://github.com/athal7/image-pii-redactor/compare/v0.1.0...v0.1.1) (2026-03-13)
 
 
