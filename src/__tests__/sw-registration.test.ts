@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 /**
  * Unit tests for the Service Worker registration helper.
  *
