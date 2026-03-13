@@ -1,3 +1,10 @@
+## [0.3.4](https://github.com/athal7/image-pii-redactor/compare/v0.3.3...v0.3.4) (2026-03-13)
+
+
+### Bug Fixes
+
+* **component:** restructure toolbar into utils row + actions row ([4402af3](https://github.com/athal7/image-pii-redactor/commit/4402af3c9126a8d7bf2694795a7c1eb7443b3657))
+
 ## [0.3.3](https://github.com/athal7/image-pii-redactor/compare/v0.3.2...v0.3.3) (2026-03-13)
 
 
