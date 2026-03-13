@@ -211,7 +211,14 @@ export const redactorStyles = css`
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    padding: 8px 0;
+    padding: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
   }
 
   .toolbar button {
