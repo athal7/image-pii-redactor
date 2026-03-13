@@ -14,3 +14,7 @@ test-results/
 
 # Misc
 .DS_Store
+
+# Override global gitignore to track project favicon
+!favicon.svg
+!**/favicon.svg

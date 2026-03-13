@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with rounded corners - dark navy matching app theme -->
+  <rect width="256" height="256" rx="40" fill="#1a1a2e"/>
+
+  <!-- Image/photo frame -->
+  <rect x="40" y="56" width="176" height="144" rx="10" fill="white"/>
+
+  <!-- Simulated image content - sky gradient bands -->
+  <rect x="40" y="56" width="176" height="72" rx="10" fill="#7dd3fc"/>
+  <rect x="40" y="104" width="176" height="24" fill="#bae6fd"/>
+
+  <!-- Ground / lower portion -->
+  <rect x="40" y="128" width="176" height="72" rx="0" fill="#d1fae5"/>
+  <!-- Bottom corners rounded -->
+  <rect x="40" y="164" width="176" height="36" rx="0" fill="#d1fae5"/>
+  <path d="M40 188 Q40 200 50 200 L206 200 Q216 200 216 188 L216 164 L40 164 Z" fill="#d1fae5"/>
+
+  <!-- Redaction bar over the middle (PII area) -->
+  <rect x="48" y="108" width="160" height="32" rx="4" fill="#0f172a"/>
+
+  <!-- Subtle redacted text lines inside bar (faint) -->
+  <rect x="60" y="118" width="48" height="4" rx="2" fill="#334155"/>
+  <rect x="116" y="118" width="36" height="4" rx="2" fill="#334155"/>
+  <rect x="60" y="126" width="28" height="4" rx="2" fill="#334155"/>
+
+  <!-- Image frame border -->
+  <rect x="40" y="56" width="176" height="144" rx="10" stroke="#475569" stroke-width="3" fill="none"/>
+
+  <!-- Small lock icon bottom-right to signal privacy -->
+  <rect x="164" y="168" width="40" height="32" rx="6" fill="#6366f1"/>
+  <rect x="173" y="160" width="22" height="16" rx="11" stroke="white" stroke-width="4" fill="none"/>
+  <circle cx="184" cy="182" r="4" fill="white"/>
+  <rect x="182" y="182" width="4" height="8" rx="2" fill="white"/>
+</svg>
