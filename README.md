@@ -1,5 +1,8 @@
 # image-pii-redactor
 
+[![npm version](https://img.shields.io/npm/v/image-pii-redactor)](https://www.npmjs.com/package/image-pii-redactor)
+[![npm downloads](https://img.shields.io/npm/dm/image-pii-redactor)](https://www.npmjs.com/package/image-pii-redactor)
+
 A Web Component that redacts personal information from AI chat screenshots entirely in the browser. No data ever leaves your device.
 
 **[Try the live demo →](https://athal7.github.io/image-pii-redactor/)**

@@ -227,9 +227,16 @@ export const redactorStyles = css`
     flex-wrap: wrap;
   }
 
-  /* Utility row: Add box, Undo, Select all, Deselect all */
+  /* Utility row: Add box, Undo, Select all, Deselect all — compact on mobile */
   .toolbar-utils {
     flex-wrap: wrap;
+  }
+
+  .toolbar-utils button {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
+    font-size: 13px;
   }
 
   /* Actions row: Cancel + Confirm always together, Confirm stretches to fill */
