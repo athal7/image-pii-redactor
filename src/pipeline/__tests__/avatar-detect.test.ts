@@ -13,44 +13,48 @@ function makeNameRedaction(
 }
 
 /**
- * A mock pixel variance fn that returns high variance for a specific region
- * (simulating an avatar) and zero elsewhere (white background).
+ * Builds a mock getColumnBrightness function that simulates a real avatar
+ * layout: white gap immediately left of name, then a dark avatar region.
+ *
+ * avatarX0..avatarX1 = dark region (brightness < 200)
+ * gapX0..gapX1      = white gap between avatar and name (brightness > 240)
  */
-function mockHighVarianceAt(
+function mockAvatarLayout(
+  gapX0: number,
+  gapX1: number,
   avatarX0: number,
-  avatarY0: number,
   avatarX1: number,
-  avatarY1: number,
-): (bbox: { x0: number; y0: number; x1: number; y1: number }) => number {
-  return (bbox) => {
-    // Check if the queried bbox overlaps the avatar region
-    const overlaps =
-      bbox.x0 < avatarX1 &&
-      bbox.x1 > avatarX0 &&
-      bbox.y0 < avatarY1 &&
-      bbox.y1 > avatarY0;
-    return overlaps ? 12000 : 0;
+): (x: number, y0: number, y1: number) => number {
+  return (x) => {
+    if (x >= gapX0 && x < gapX1) return 245; // bright gap
+    if (x >= avatarX0 && x < avatarX1) return 170; // dark avatar
+    return 245; // everything else is white background
   };
+}
+
+/** Uniform grey (message bubble text) — no gap, no dark region. */
+function mockGreyBackground(): (x: number) => number {
+  return () => 220;
 }
 
 // ── detectAvatars ─────────────────────────────────────────────────────────────
 
 describe("detectAvatars", () => {
   it("detects an avatar to the left of a PERSON name redaction", () => {
-    // Name bbox at x0=1677, y0=103, simulating "Claire Jenifer Pershan"
+    // Name bbox at x0=1677, y=103-125 (lineH=22)
+    // Gap: x=1652-1677 (25px), Avatar: x=1601-1652 (51px, avg brightness 175)
     const nameRedactions = [
       makeNameRedaction("r1", { x0: 1677, y0: 103, x1: 1975, y1: 125 }),
     ];
-    // Mock: high variance region at x=1590-1679, y=95-149 (the avatar)
-    const getVariance = mockHighVarianceAt(1590, 95, 1679, 149);
+    const getColBrightness = mockAvatarLayout(1652, 1677, 1601, 1652);
 
-    const avatars = detectAvatars(nameRedactions, 2070, 964, getVariance);
+    const avatars = detectAvatars(nameRedactions, 2070, 964, getColBrightness);
 
     expect(avatars).toHaveLength(1);
     expect(avatars[0].label).toBe("AVATAR");
     expect(avatars[0].source).toBe("auto");
     expect(avatars[0].enabled).toBe(true);
-    // Avatar should be to the left of the name
+    // Avatar bbox should be to the left of the name
     expect(avatars[0].bbox.x1).toBeLessThanOrEqual(1677);
   });
 
@@ -59,45 +63,51 @@ describe("detectAvatars", () => {
       makeNameRedaction("r1", { x0: 1677, y0: 103, x1: 1975, y1: 125 }),
       makeNameRedaction("r2", { x0: 1673, y0: 365, x1: 1927, y1: 387 }),
     ];
-    const getVariance = (bbox: { x0: number; y0: number; x1: number; y1: number }) => {
-      // Avatar 1: near y=103
-      if (bbox.x0 < 1679 && bbox.x1 > 1590 && bbox.y0 < 149 && bbox.y1 > 95) return 12000;
-      // Avatar 2: near y=365
-      if (bbox.x0 < 1679 && bbox.x1 > 1550 && bbox.y0 < 409 && bbox.y1 > 330) return 10000;
-      return 0;
+    // Both have gap+avatar layout at similar x positions
+    const getColBrightness = (x: number) => {
+      if ((x >= 1652 && x < 1677) || (x >= 1648 && x < 1673)) return 245; // gap
+      if (x >= 1601 && x < 1652) return 170; // avatar
+      return 245;
     };
 
-    const avatars = detectAvatars(nameRedactions, 2070, 964, getVariance);
+    const avatars = detectAvatars(nameRedactions, 2070, 964, getColBrightness);
     expect(avatars).toHaveLength(2);
   });
 
-  it("does not emit an avatar when the region to the left is plain background (low variance)", () => {
-    // Name at left edge — no room for an avatar, all variance is 0
+  it("does not detect an avatar when region left of name is uniform grey (no gap+dark pattern)", () => {
     const nameRedactions = [
-      makeNameRedaction("r1", { x0: 65, y0: 43, x1: 264, y1: 65 }),
+      makeNameRedaction("r1", { x0: 1682, y0: 579, x1: 1900, y1: 601 }),
     ];
-    const getVariance = () => 0; // pure white background everywhere
+    // Simulate: continuous grey background, no gap, no dark region (Louis's FP)
+    const getColBrightness = mockGreyBackground();
 
-    const avatars = detectAvatars(nameRedactions, 2070, 964, getVariance);
+    const avatars = detectAvatars(nameRedactions, 2070, 964, getColBrightness);
     expect(avatars).toHaveLength(0);
   });
 
-  it("deduplicates avatars when multiple name redactions point to the same region", () => {
-    // Two name redactions on the same visual line (e.g. GIVENNAME + SURNAME)
-    // both pointing left to the same avatar
+  it("does not detect an avatar when name is at the very left edge of the image", () => {
+    // Name at x0=10 — no horizontal space for an avatar to the left
+    const nameRedactions = [
+      makeNameRedaction("r1", { x0: 10, y0: 43, x1: 200, y1: 65 }),
+    ];
+    const getColBrightness = () => 245; // all white — no avatar
+
+    const avatars = detectAvatars(nameRedactions, 2070, 964, getColBrightness);
+    expect(avatars).toHaveLength(0);
+  });
+
+  it("deduplicates avatars when multiple name redactions on same line point to same avatar", () => {
     const nameRedactions = [
       makeNameRedaction("r1", { x0: 1677, y0: 103, x1: 1754, y1: 125 }, "GIVENNAME"),
       makeNameRedaction("r2", { x0: 1764, y0: 103, x1: 1975, y1: 125 }, "SURNAME"),
     ];
-    const getVariance = mockHighVarianceAt(1590, 95, 1679, 149);
+    const getColBrightness = mockAvatarLayout(1652, 1677, 1601, 1652);
 
-    const avatars = detectAvatars(nameRedactions, 2070, 964, getVariance);
-    // Should produce only 1 avatar, not 2
+    const avatars = detectAvatars(nameRedactions, 2070, 964, getColBrightness);
     expect(avatars).toHaveLength(1);
   });
 
-  it("only searches left of name redactions with person labels", () => {
-    // A DATE redaction should not trigger avatar search
+  it("only searches near person-label redactions, ignores DATE etc.", () => {
     const dateRedaction: Redaction = {
       id: "r1",
       bbox: { x0: 300, y0: 100, x1: 500, y1: 120 },
@@ -105,29 +115,28 @@ describe("detectAvatars", () => {
       enabled: true,
       label: "DATE",
     };
-    const getVariance = () => 15000; // high variance everywhere
+    // Even with a perfect avatar pattern, DATE should not trigger
+    const getColBrightness = mockAvatarLayout(275, 300, 224, 275);
 
-    const avatars = detectAvatars([dateRedaction], 2070, 964, getVariance);
+    const avatars = detectAvatars([dateRedaction], 2070, 964, getColBrightness);
     expect(avatars).toHaveLength(0);
   });
 
   it("handles empty redactions list gracefully", () => {
-    const avatars = detectAvatars([], 2070, 964, () => 0);
+    const avatars = detectAvatars([], 2070, 964, () => 245);
     expect(avatars).toHaveLength(0);
   });
 
-  it("does not search beyond the left edge of the image", () => {
-    // Name at x0=10 — search would go to x=-120 without clamping
+  it("does not query columns beyond the left image edge", () => {
     const nameRedactions = [
       makeNameRedaction("r1", { x0: 10, y0: 100, x1: 200, y1: 120 }),
     ];
-    let minXQueried = Infinity;
-    const getVariance = (bbox: { x0: number; y0: number; x1: number; y1: number }) => {
-      if (bbox.x0 < minXQueried) minXQueried = bbox.x0;
-      return 0;
-    };
+    const queriedXValues: number[] = [];
+    const getColBrightness = (x: number) => { queriedXValues.push(x); return 245; };
 
-    detectAvatars(nameRedactions, 2070, 964, getVariance);
-    expect(minXQueried).toBeGreaterThanOrEqual(0);
+    detectAvatars(nameRedactions, 2070, 964, getColBrightness);
+    if (queriedXValues.length > 0) {
+      expect(Math.min(...queriedXValues)).toBeGreaterThanOrEqual(0);
+    }
   });
 });

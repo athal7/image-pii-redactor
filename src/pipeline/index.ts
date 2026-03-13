@@ -17,14 +17,14 @@ import { detectPiiNer, releaseNerModel } from "./pii-ner.js";
 import { detectPiiRegex } from "./pii-regex.js";
 import { detectPiiCompromise } from "./pii-compromise.js";
 import { entitiesToRedactions, mergeEntities } from "./bridge.js";
-import { detectAvatars, makeCanvasVarianceFn } from "./avatar-detect.js";
+import { detectAvatars, makeCanvasColumnFn } from "./avatar-detect.js";
 
 export { runOcr } from "./ocr.js";
 export { detectPiiNer, preloadNerModel, releaseNerModel } from "./pii-ner.js";
 export { detectPiiRegex } from "./pii-regex.js";
 export { detectPiiCompromise } from "./pii-compromise.js";
 export { entitiesToRedactions, mergeEntities } from "./bridge.js";
-export { detectAvatars, makeCanvasVarianceFn } from "./avatar-detect.js";
+export { detectAvatars, makeCanvasColumnFn } from "./avatar-detect.js";
 export { renderRedactedImage, drawRedactionPreview } from "./redact.js";
 export { preprocessForOcr, computeAverageLuminance, isDarkBackground, sampleDistributedPixels, DARK_THRESHOLD } from "./preprocess.js";
 
@@ -97,8 +97,8 @@ export async function analyzeImage(
       } else {
         drawableImage = image;
       }
-      const getVariance = makeCanvasVarianceFn(drawableImage, ocr.imageWidth, ocr.imageHeight);
-      const avatarRedactions = detectAvatars(personRedactions, ocr.imageWidth, ocr.imageHeight, getVariance);
+      const getColBrightness = makeCanvasColumnFn(drawableImage, ocr.imageWidth, ocr.imageHeight);
+      const avatarRedactions = detectAvatars(personRedactions, ocr.imageWidth, ocr.imageHeight, getColBrightness);
       redactions.push(...avatarRedactions);
     }
   }
