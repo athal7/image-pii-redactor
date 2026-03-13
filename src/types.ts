@@ -80,7 +80,8 @@ export type Phase =
   | "ocr"
   | "detecting"
   | "reviewing"
-  | "exporting";
+  | "exporting"
+  | "done";
 
 /**
  * Progress update emitted during model loading and processing.

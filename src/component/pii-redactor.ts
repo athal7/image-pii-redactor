@@ -60,6 +60,7 @@ export class PiiRedactor extends LitElement {
   @state() private drawStart: { x: number; y: number } | null = null;
   @state() private drawCurrent: { x: number; y: number } | null = null;
   @state() private networkRequestCount = 0;
+  @state() private redactedBlob: Blob | null = null;
 
   private imageFile: File | null = null;
   private imageElement: HTMLImageElement | null = null;
@@ -109,6 +110,7 @@ export class PiiRedactor extends LitElement {
       this.imageUrl = "";
     }
     this.imageElement = null;
+    this.redactedBlob = null;
   }
 
   override disconnectedCallback(): void {
@@ -132,6 +134,7 @@ export class PiiRedactor extends LitElement {
           : nothing}
         ${this.phase === "reviewing" ? this.renderEditor() : nothing}
         ${this.phase === "exporting" ? this.renderProgress() : nothing}
+        ${this.phase === "done" ? this.renderDone() : nothing}
         ${this.errorMessage ? this.renderError() : nothing}
       </div>
     `;
@@ -319,6 +322,31 @@ export class PiiRedactor extends LitElement {
       <div class="error">
         <p>${this.errorMessage}</p>
         <button @click=${this.reset}>Try again</button>
+      </div>
+    `;
+  }
+
+  private renderDone() {
+    const canShare =
+      typeof navigator.share === "function" &&
+      typeof navigator.canShare === "function" &&
+      this.redactedBlob != null &&
+      navigator.canShare({
+        files: [new File([this.redactedBlob], "redacted.png", { type: "image/png" })],
+      });
+
+    return html`
+      <div class="done">
+        <div class="done-title">Redaction complete</div>
+        <div class="done-actions">
+          <button class="primary" @click=${this.handleDownload}>
+            Download
+          </button>
+          ${canShare
+            ? html`<button @click=${this.handleShare}>Share</button>`
+            : nothing}
+          <button @click=${this.reset}>Redact another</button>
+        </div>
       </div>
     `;
   }
@@ -562,8 +590,8 @@ export class PiiRedactor extends LitElement {
         }),
       );
 
-      this.progress = 1;
-      this.progressMessage = "Done.";
+      this.redactedBlob = result.blob;
+      this.phase = "done";
     } catch (err) {
       console.error("Export error:", err);
       this.errorMessage =
@@ -580,6 +608,34 @@ export class PiiRedactor extends LitElement {
       }),
     );
     this.reset();
+  }
+
+  private handleDownload() {
+    if (!this.redactedBlob) return;
+    const url = URL.createObjectURL(this.redactedBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = this.imageFile
+      ? `redacted-${this.imageFile.name.replace(/\.[^.]+$/, "")}.png`
+      : "redacted.png";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  private async handleShare() {
+    if (!this.redactedBlob) return;
+    const filename = this.imageFile
+      ? `redacted-${this.imageFile.name.replace(/\.[^.]+$/, "")}.png`
+      : "redacted.png";
+    const file = new File([this.redactedBlob], filename, { type: "image/png" });
+    try {
+      await navigator.share({ files: [file] });
+    } catch (err) {
+      // AbortError means user dismissed the share sheet — not an error
+      if (err instanceof Error && err.name !== "AbortError") {
+        this.errorMessage = "Share failed. Try downloading instead.";
+      }
+    }
   }
 
   // --- Helpers ---

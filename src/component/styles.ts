@@ -366,6 +366,55 @@ export const redactorStyles = css`
     min-height: 44px;
   }
 
+  /* --- Done state --- */
+  .done {
+    padding: 32px 24px;
+    text-align: center;
+  }
+
+  .done-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--success);
+    margin-bottom: 20px;
+  }
+
+  .done-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .done-actions button {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 20px;
+    font-size: 15px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .done-actions button.primary {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+
+  .done-actions button:hover {
+    background: var(--bg-secondary);
+  }
+
+  .done-actions button.primary:hover {
+    background: var(--accent-hover);
+  }
+
   /* --- Responsive --- */
   @container (min-width: 640px) {
     .editor {
