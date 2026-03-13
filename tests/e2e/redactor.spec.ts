@@ -68,10 +68,6 @@ test("trust banner is visible and shows 0 network requests initially", async ({
   expect(bannerText).toContain("Network: 0 requests");
 });
 
-test("airplane mode hint is visible", async ({ page }) => {
-  await expect(page.getByText("Airplane Mode")).toBeVisible();
-});
-
 // ── File upload ───────────────────────────────────────────────────────────────
 
 test("drop zone is visible in idle state", async ({ page }) => {

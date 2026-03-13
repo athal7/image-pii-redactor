@@ -2,6 +2,11 @@ import { defineConfig } from "vite";
 import { resolve } from "path";
 
 export default defineConfig({
+  worker: {
+    // Use ES module format for workers so dynamic imports (Transformers.js)
+    // work correctly. IIFE format doesn't support code-splitting.
+    format: "es",
+  },
   build: {
     lib: {
       entry: resolve(__dirname, "src/index.ts"),

@@ -19,7 +19,14 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        // Allow a persistent user data dir for model caching in CI.
+        // Set via PLAYWRIGHT_USER_DATA_DIR env var; falls back to ephemeral.
+        ...(process.env.PLAYWRIGHT_USER_DATA_DIR
+          ? { userDataDir: process.env.PLAYWRIGHT_USER_DATA_DIR }
+          : {}),
+      },
     },
     // Mobile viewport for mobile-specific tests
     {
