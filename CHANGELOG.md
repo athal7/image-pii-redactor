@@ -1,3 +1,10 @@
+# [0.4.0](https://github.com/athal7/image-pii-redactor/compare/v0.3.7...v0.4.0) (2026-03-13)
+
+
+### Features
+
+* **ner:** move Transformers.js inference to Web Worker to unblock main thread ([bff097a](https://github.com/athal7/image-pii-redactor/commit/bff097aad4069e947082194664e1939a61d7242d))
+
 ## [0.3.7](https://github.com/athal7/image-pii-redactor/compare/v0.3.6...v0.3.7) (2026-03-13)
 
 
