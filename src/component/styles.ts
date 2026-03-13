@@ -440,17 +440,6 @@ export const redactorStyles = css`
     background: var(--accent-hover);
   }
 
-  .done-network {
-    margin-top: 20px;
-    font-size: 13px;
-    color: var(--text-secondary);
-  }
-
-  .done-network-zero {
-    color: var(--success);
-    font-weight: 500;
-  }
-
   /* --- Responsive --- */
   @container (min-width: 640px) {
     .editor {

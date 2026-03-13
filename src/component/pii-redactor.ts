@@ -76,38 +76,15 @@ export class PiiRedactor extends LitElement {
   @state() private drawMode = false;
   @state() private drawStart: { x: number; y: number } | null = null;
   @state() private drawCurrent: { x: number; y: number } | null = null;
-  @state() private networkRequestCount = 0;
   @state() private redactedBlob: Blob | null = null;
-  @state() private modelCached = false;
-
   private imageFile: File | null = null;
   private imageElement: HTMLImageElement | null = null;
   private undoStack: Redaction[][] = [];
-  private perfObserver: PerformanceObserver | null = null;
 
   @query(".file-input") private fileInput!: HTMLInputElement;
 
   override connectedCallback(): void {
     super.connectedCallback();
-    // Count outbound network requests to HuggingFace CDN (model downloads)
-    // so the trust banner shows real data. buffered:false means we only see
-    // requests that happen after the component connects — not page-load assets.
-    if (typeof PerformanceObserver !== "undefined") {
-      this.perfObserver = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) {
-          const url = (entry as PerformanceResourceTiming).name ?? "";
-          if (url.includes("huggingface.co") || url.includes("hf.co")) {
-            this.networkRequestCount++;
-          }
-        }
-      });
-      try {
-        this.perfObserver.observe({ type: "resource", buffered: false });
-      } catch {
-        // Some environments don't support resource timing — ignore
-        this.perfObserver = null;
-      }
-    }
 
     // Silently preload the model in the background so it's cached by the
     // time the user picks a file. Skip if the user is on a metered/slow
@@ -170,8 +147,6 @@ export class PiiRedactor extends LitElement {
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     if (this.imageUrl) URL.revokeObjectURL(this.imageUrl);
-    this.perfObserver?.disconnect();
-    this.perfObserver = null;
   }
 
   // --- Rendering ---
@@ -381,17 +356,6 @@ export class PiiRedactor extends LitElement {
         files: [new File([this.redactedBlob], "redacted.png", { type: "image/png" })],
       });
 
-    const networkNote = this.networkRequestCount === 0
-      ? html`<p class="done-network done-network-zero">
-          Network requests to AI model host: 0 — served from local cache.
-        </p>`
-      : html`<p class="done-network">
-          Network requests to AI model host: ${this.networkRequestCount}.
-          ${this.modelCached
-            ? html`Model is now cached — next time will be 0.`
-            : nothing}
-        </p>`;
-
     return html`
       <div class="done">
         <div class="done-title">Redaction complete</div>
@@ -404,7 +368,6 @@ export class PiiRedactor extends LitElement {
             : nothing}
           <button @click=${this.reset}>Redact another</button>
         </div>
-        ${networkNote}
       </div>
     `;
   }
@@ -451,7 +414,6 @@ export class PiiRedactor extends LitElement {
     }
 
     this.errorMessage = "";
-    this.networkRequestCount = 0;
     this.imageFile = file;
     this.imageUrl = URL.createObjectURL(file);
     this.phase = "loading";
@@ -474,8 +436,6 @@ export class PiiRedactor extends LitElement {
       this.undoStack = [];
       this.phase = "reviewing";
 
-      // Check if model is now cached in a SW (for the done-screen hint)
-      this.checkModelCached();
     } catch (err) {
       console.error("Pipeline error:", err);
       this.errorMessage =
@@ -484,24 +444,6 @@ export class PiiRedactor extends LitElement {
     }
   }
 
-  private async checkModelCached(): Promise<void> {
-    if (!("caches" in window)) return;
-    try {
-      // The SW caches HuggingFace model files under a known cache name.
-      // If any huggingface.co entry exists we know the model is cached.
-      const cacheNames = await caches.keys();
-      for (const name of cacheNames) {
-        const cache = await caches.open(name);
-        const keys = await cache.keys();
-        if (keys.some((r) => r.url.includes("huggingface.co"))) {
-          this.modelCached = true;
-          return;
-        }
-      }
-    } catch {
-      // Cache API blocked (e.g. private browsing on some browsers) — ignore
-    }
-  }
 
   private loadImage(src: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
