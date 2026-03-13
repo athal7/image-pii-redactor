@@ -95,18 +95,65 @@ function findWordsByText(words: OcrWord[], entityText: string): OcrWord[] {
 }
 
 /**
- * Group words by their line index. This prevents a multi-line entity
- * (rare, but possible with addresses) from producing one giant bbox
- * that covers everything between the first and last line.
+ * Gap threshold (px) beyond which two consecutive words on the same Tesseract
+ * line are treated as belonging to separate visual columns.
+ *
+ * Chat UIs often render a two-column layout (sidebar + content) that Tesseract
+ * collapses into a single line. A gap this large indicates the words are in
+ * different columns and should be redacted separately.
+ */
+const COLUMN_GAP_THRESHOLD_PX = 200;
+
+/**
+ * Group words into spatial clusters for redaction. Each cluster becomes one
+ * bounding box.
+ *
+ * Words are first split by Tesseract line index. Within each line, they are
+ * further split when consecutive words have an x-gap larger than
+ * COLUMN_GAP_THRESHOLD_PX. This prevents cross-column OCR artifacts (e.g.
+ * "Alice Nguyen ee" where "ee" is from the right column) from producing a
+ * single giant bbox that spans the full width of the image.
+ *
+ * Returns a flat list of word groups, each guaranteed to be spatially coherent.
  */
 function groupByLine(words: OcrWord[]): Map<number, OcrWord[]> {
-  const map = new Map<number, OcrWord[]>();
+  // First pass: group by Tesseract line index
+  const byLine = new Map<number, OcrWord[]>();
   for (const word of words) {
-    const group = map.get(word.lineIndex) ?? [];
+    const group = byLine.get(word.lineIndex) ?? [];
     group.push(word);
-    map.set(word.lineIndex, group);
+    byLine.set(word.lineIndex, group);
   }
-  return map;
+
+  // Second pass: split each line group further on large horizontal gaps.
+  // We use a synthetic compound key (lineIndex * 10000 + segmentIndex) so the
+  // output Map keys remain unique numbers, compatible with the callers that
+  // only iterate values.
+  const result = new Map<number, OcrWord[]>();
+  let segmentCounter = 0;
+
+  for (const [lineIndex, lineWords] of byLine) {
+    // Sort words left-to-right within the line
+    const sorted = [...lineWords].sort((a, b) => a.bbox.x0 - b.bbox.x0);
+
+    let currentGroup: OcrWord[] = [sorted[0]];
+    for (let i = 1; i < sorted.length; i++) {
+      const prev = sorted[i - 1];
+      const curr = sorted[i];
+      const gap = curr.bbox.x0 - prev.bbox.x1;
+
+      if (gap > COLUMN_GAP_THRESHOLD_PX) {
+        // Large gap → flush current group and start a new one
+        result.set(lineIndex * 10000 + segmentCounter++, currentGroup);
+        currentGroup = [curr];
+      } else {
+        currentGroup.push(curr);
+      }
+    }
+    result.set(lineIndex * 10000 + segmentCounter++, currentGroup);
+  }
+
+  return result;
 }
 
 /**

@@ -100,6 +100,21 @@ describe("detectPiiRegex", () => {
     expect(Array.isArray(result)).toBe(true);
   });
 
+  it("detects written-out month-name dates (e.g. October 24, 2025)", () => {
+    const texts = [
+      "October 24, 2025.",
+      "January 2025.",
+      "December 2023.",
+      "March 15, 1985",
+      "Published on February 28, 2024.",
+    ];
+    for (const text of texts) {
+      const entities = detectPiiRegex(text);
+      const dates = entities.filter(e => e.label === "DATE");
+      expect(dates.length).toBeGreaterThan(0);
+    }
+  });
+
   it("finds PII in multiline OCR-style text", () => {
     // Simulate what Tesseract.js outputs: words may be split weirdly
     const ocrText = "Your email sarah.j@gmail.com\nwas verified on 03/15/1985.\nMy phone is 555-867-5309.";

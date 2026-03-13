@@ -49,11 +49,18 @@ const PII_PATTERNS: PiiPattern[] = [
     pattern:
       /\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b/g,
   },
-  // Dates (various formats — these often contain birth dates)
+  // Dates — numeric formats (MM/DD/YYYY, YYYY-MM-DD, etc.)
   {
     label: "DATE",
     pattern:
       /\b(?:\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}|\d{4}[/.-]\d{1,2}[/.-]\d{1,2})\b/g,
+  },
+  // Dates — written-out month name (e.g. "October 24, 2025" or "January 2025")
+  // Matches: <MonthName> [<day>,] <year>
+  {
+    label: "DATE",
+    pattern:
+      /\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+(?:\d{1,2},\s*)?\d{4}\b/g,
   },
   // URLs with paths (may contain identifying query params)
   {

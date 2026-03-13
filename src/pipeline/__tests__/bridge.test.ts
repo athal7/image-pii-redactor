@@ -19,7 +19,7 @@ function makeEntity(
   text: string,
   start: number,
   end: number,
-  source: "ner" | "regex" = "ner",
+  source: "ner" | "regex" | "compromise" = "ner",
   score = 0.95,
 ): PiiEntity {
   return { id, label, text, start, end, score, source };
@@ -102,6 +102,35 @@ describe("entitiesToRedactions", () => {
   it("handles empty word list gracefully", () => {
     const entities = [makeEntity("e1", "EMAIL", "sarah@x.com", 0, 11)];
     expect(entitiesToRedactions(entities, [])).toHaveLength(0);
+  });
+
+  it("splits words on the same Tesseract line that have a large horizontal gap (cross-column layout)", () => {
+    // Scenario: two-column chat UI where OCR groups the entire row as one line.
+    // "Alice Nguyen ee" — "Alice Nguyen" is at x≈60 (left column),
+    // "ee" is at x≈828 (right column, OCR artifact from the other column).
+    // "Alice Nguyen ee" would produce a single bbox spanning x=60 to x=860
+    // which is wrong — only "Alice Nguyen" should be redacted.
+    const crossColumnWords: OcrWord[] = [
+      makeWord("Alice",  0, { x0: 60,  y0: 41, x1: 105, y1: 60 }, 1),
+      makeWord("Nguyen", 6, { x0: 105, y0: 41, x1: 161, y1: 60 }, 1),
+      makeWord("ee",     13, { x0: 828, y0: 33, x1: 858, y1: 55 }, 1), // far-right OCR artifact
+    ];
+    // Entity spans "Alice Nguyen ee" (start=0, end=15)
+    const entities = [makeEntity("e1", "PERSON", "Alice Nguyen ee", 0, 15, "compromise", 0.75)];
+    const redactions = entitiesToRedactions(entities, crossColumnWords);
+
+    // Should produce 2 separate redactions (not one giant bbox):
+    // one for "Alice Nguyen" (left column), one for "ee" (right column artifact)
+    expect(redactions).toHaveLength(2);
+
+    // The first redaction should cover only the left-column words
+    const leftRedaction = redactions.find(r => r.bbox.x0 < 200);
+    expect(leftRedaction).toBeDefined();
+    expect(leftRedaction!.bbox.x1).toBeLessThan(200); // should NOT extend to x=828
+
+    // The right-column redaction should be separate
+    const rightRedaction = redactions.find(r => r.bbox.x0 > 700);
+    expect(rightRedaction).toBeDefined();
   });
 });
 

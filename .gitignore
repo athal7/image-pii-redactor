@@ -18,3 +18,4 @@ test-results/
 # Override global gitignore to track project favicon
 !favicon.svg
 !**/favicon.svg
+*.traineddata
