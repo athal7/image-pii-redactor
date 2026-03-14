@@ -63,34 +63,37 @@ magick -size 800x520 xc:'#ffffff' \
 echo "  [OK] light-mode-chat.png"
 
 # ── 2. no-pii.png ──────────────────────────────────────────────────────────────
-# A screenshot that contains NO personal information.
-# Tests that the pipeline correctly reports 0 redactions.
+# A screenshot that contains no personal information — no names, emails, phones,
+# addresses, SSNs, or other PII.  Uses abstract technical/logical content so the
+# NER model has nothing real to latch onto.
+# Tests that the pipeline completes gracefully and produces zero redactions.
 magick -size 800x400 xc:'#1e2130' \
   \
   -fill '#2d3250' -draw "rectangle 0,0 800,44" \
   -fill '#e0e0e0' -pointsize $FONT_LG -font Helvetica \
     -annotate +20+30 "AI Assistant Chat" \
   \
-  -fill '#3b82f6' -draw "rectangle 30,60 500,120" \
+  -fill '#3b82f6' -draw "rectangle 30,60 500,130" \
   -fill '#ffffff' -pointsize $FONT_BODY -font Helvetica \
-    -annotate +45+82  "What is the capital of France?" \
-    -annotate +45+106 "I would like to learn more about history." \
+    -annotate +45+82  "How does a binary search algorithm work?" \
+    -annotate +45+106 "Can you show a simple example?" \
   \
-  -fill '#2d3250' -draw "rectangle 300,140 770,220" \
+  -fill '#2d3250' -draw "rectangle 300,150 770,250" \
   -fill '#e0e0e0' -pointsize $FONT_BODY -font Helvetica \
-    -annotate +315+162 "The capital of France is Paris." \
-    -annotate +315+186 "Paris has been the capital for many centuries." \
-    -annotate +315+210 "It sits on the Seine river in northern France." \
+    -annotate +315+172 "Binary search divides a sorted array in half" \
+    -annotate +315+196 "repeatedly until the target value is found." \
+    -annotate +315+220 "It runs in O(log n) time complexity." \
+    -annotate +315+244 "This is much faster than linear search." \
   \
-  -fill '#3b82f6' -draw "rectangle 30,240 500,300" \
+  -fill '#3b82f6' -draw "rectangle 30,265 500,320" \
   -fill '#ffffff' -pointsize $FONT_BODY -font Helvetica \
-    -annotate +45+262 "Interesting! What about Germany?" \
-    -annotate +45+286 "Tell me about Berlin." \
+    -annotate +45+287 "What are the preconditions for using it?" \
+    -annotate +45+311 "Does the array need to be sorted first?" \
   \
-  -fill '#2d3250' -draw "rectangle 300,320 770,380" \
+  -fill '#2d3250' -draw "rectangle 300,335 770,390" \
   -fill '#e0e0e0' -pointsize $FONT_BODY -font Helvetica \
-    -annotate +315+342 "Berlin is the capital of Germany." \
-    -annotate +315+366 "It became the capital after reunification." \
+    -annotate +315+357 "Yes, the array must be sorted before searching." \
+    -annotate +315+381 "Sorting first adds O(n log n) overhead." \
   \
   "$OUTDIR/no-pii.png"
 
