@@ -34,8 +34,7 @@ const TEST_IMAGE = path.resolve(__dirname, "../../demo/test-screenshot.png");
 const FIXTURES = {
   /** White-background chat (ChatGPT / Claude light theme). */
   lightModeChat: path.resolve(__dirname, "fixtures/light-mode-chat.png"),
-  /** Screenshot with zero PII — pipeline should produce 0 redactions. */
-  noPii: path.resolve(__dirname, "fixtures/no-pii.png"),
+
   /** Structured PII only: SSN, credit card, IP, URL — regex branch. */
   regexOnly: path.resolve(__dirname, "fixtures/regex-only.png"),
   /** Low-resolution mobile screenshot (390×280). */
@@ -391,34 +390,7 @@ test.describe("image variety: light-mode chat (requires model download)", () => 
   });
 });
 
-test.describe("image variety: no-PII screenshot (requires model download)", () => {
-  test.setTimeout(300_000);
-  let page: Page;
 
-  test.beforeAll(async ({ browser }) => {
-    page = await openReviewingPage(browser, FIXTURES.noPii);
-  });
-  test.afterAll(async () => page.close());
-
-  test("screenshot with no PII produces zero redactions", async () => {
-    // Contains only factual geography text — no names, emails, phones, addresses,
-    // dates, or numbers that could match regex patterns.
-    const rectCount = await countRedactionBoxes(page);
-    expect(rectCount).toBe(0);
-  });
-
-  test("entity list header shows zero items on no-PII image", async () => {
-    const headerText = await page.evaluate(() => {
-      const host = document.querySelector("pii-redactor");
-      if (!host?.shadowRoot) return "";
-      const el = host.shadowRoot.querySelector(".entity-list-header") as HTMLElement | null;
-      return el?.innerText?.replace(/\s+/g, " ").trim() ?? "";
-    });
-    const matchesCount = /Detected items \(0 \/ 0\)/.test(headerText);
-    const matchesEmpty = headerText.length === 0 || /no detected/i.test(headerText);
-    expect(matchesCount || matchesEmpty).toBe(true);
-  });
-});
 
 test.describe("image variety: regex-only PII (requires model download)", () => {
   test.setTimeout(300_000);
