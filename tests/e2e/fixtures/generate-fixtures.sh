@@ -79,7 +79,7 @@ magick -size 800x400 xc:'#1e2130' \
   -fill '#2d3250' -draw "rectangle 300,140 770,220" \
   -fill '#e0e0e0' -pointsize $FONT_BODY -font Helvetica \
     -annotate +315+162 "The capital of France is Paris." \
-    -annotate +315+186 "Paris has been the capital since the 10th century." \
+    -annotate +315+186 "Paris has been the capital for many centuries." \
     -annotate +315+210 "It sits on the Seine river in northern France." \
   \
   -fill '#3b82f6' -draw "rectangle 30,240 500,300" \
@@ -90,7 +90,7 @@ magick -size 800x400 xc:'#1e2130' \
   -fill '#2d3250' -draw "rectangle 300,320 770,380" \
   -fill '#e0e0e0' -pointsize $FONT_BODY -font Helvetica \
     -annotate +315+342 "Berlin is the capital of Germany." \
-    -annotate +315+366 "It became the capital in 1990 after reunification." \
+    -annotate +315+366 "It became the capital after reunification." \
   \
   "$OUTDIR/no-pii.png"
 
