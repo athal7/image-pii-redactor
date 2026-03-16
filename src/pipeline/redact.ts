@@ -1,11 +1,64 @@
 import type { Redaction, RedactionResult } from "../types.js";
 
+// ── PNG metadata utilities ────────────────────────────────────────────────────
+
+const PNG_SIGNATURE = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+
+/**
+ * Parse the chunk type names from a PNG byte stream.
+ *
+ * Used to verify that exported blobs contain no metadata chunks (tEXt, iTXt,
+ * zTXt, eXIf, tIME, etc.). Returns an empty array if the buffer is not a
+ * valid PNG.
+ *
+ * Metadata stripping guarantee
+ * ─────────────────────────────
+ * The canvas round-trip (drawImage → toBlob/convertToBlob with "image/png")
+ * produces a blob that contains only raw pixel data. All ancillary chunks
+ * present in the original file — EXIF, XMP, GPS, timestamps, comments — are
+ * silently discarded by the browser's PNG encoder. This function exists so
+ * that guarantee can be verified in tests.
+ */
+export function parsePngChunkNames(bytes: Uint8Array): string[] {
+  // Validate PNG signature
+  if (bytes.length < PNG_SIGNATURE.length) return [];
+  for (let i = 0; i < PNG_SIGNATURE.length; i++) {
+    if (bytes[i] !== PNG_SIGNATURE[i]) return [];
+  }
+
+  const decoder = new TextDecoder("latin1");
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const names: string[] = [];
+  let offset = PNG_SIGNATURE.length;
+
+  while (offset + 8 <= bytes.length) {
+    const dataLength = view.getUint32(offset, false);
+    const typeBytes = bytes.slice(offset + 4, offset + 8);
+    const typeName = decoder.decode(typeBytes);
+    names.push(typeName);
+    if (typeName === "IEND") break;
+    // 4 (length) + 4 (type) + dataLength (data) + 4 (CRC)
+    offset += 4 + 4 + dataLength + 4;
+  }
+
+  return names;
+}
+
+// ── Redaction rendering ───────────────────────────────────────────────────────
+
 /**
  * Render the original image with redaction boxes burned in.
  * Returns a PNG blob ready for upload.
  *
  * This is intentionally simple: draw the image, then fill black rectangles.
  * The simplicity is a feature — it's trivially auditable for a privacy tool.
+ *
+ * Metadata stripping
+ * ───────────────────
+ * The canvas → PNG round-trip strips all metadata from the original image.
+ * EXIF data, XMP, GPS coordinates, device/software info, and timestamps are
+ * all discarded by the browser's PNG encoder. The output blob contains only
+ * pixel data. Use `parsePngChunkNames` to verify this programmatically.
  */
 export async function renderRedactedImage(
   originalImage: HTMLImageElement | ImageBitmap,
