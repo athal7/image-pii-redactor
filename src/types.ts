@@ -108,6 +108,8 @@ export interface RedactionResult {
   /** Image dimensions. */
   width: number;
   height: number;
+  /** OCR text with PII words replaced by [REDACTED]. */
+  redactedText: string;
 }
 
 /**

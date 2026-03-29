@@ -3,7 +3,7 @@ import { customElement, property, state, query } from "lit/decorators.js";
 import { redactorStyles } from "./styles.js";
 import { shieldIcon, uploadIcon } from "./icons.js";
 import { analyzeImage } from "../pipeline/index.js";
-import { renderRedactedImage } from "../pipeline/redact.js";
+import { renderRedactedImage, buildRedactedText } from "../pipeline/redact.js";
 import { preloadNerModel } from "../pipeline/pii-ner.js";
 import type {
   Phase,
@@ -598,10 +598,15 @@ export class PiiRedactor extends LitElement {
         this.imageElement,
         this.redactions,
       );
+      const redactedText = buildRedactedText(
+        this.ocrResult,
+        this.redactions,
+        this.entities,
+      );
 
       this.dispatchEvent(
         new CustomEvent<RedactionResult>("redaction-complete", {
-          detail: result,
+          detail: { ...result, redactedText },
           bubbles: true,
           composed: true,
         }),

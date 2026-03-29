@@ -8,7 +8,180 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { parsePngChunkNames } from "../redact.js";
+import { parsePngChunkNames, buildRedactedText } from "../redact.js";
+import type { OcrWord, OcrResult, PiiEntity, Redaction } from "../../types.js";
+
+// ── buildRedactedText ─────────────────────────────────────────────────────────
+
+// Helpers
+function makeWord(
+  text: string,
+  charStart: number,
+  lineIndex: number,
+  bbox: { x0: number; y0: number; x1: number; y1: number } = { x0: 0, y0: 0, x1: 100, y1: 20 },
+): OcrWord {
+  return { text, charStart, charEnd: charStart + text.length, bbox, confidence: 99, lineIndex };
+}
+
+function makeOcrResult(fullText: string, words: OcrWord[]): OcrResult {
+  return { fullText, words, imageWidth: 800, imageHeight: 600 };
+}
+
+function makeEntity(
+  id: string,
+  label: string,
+  start: number,
+  end: number,
+): PiiEntity {
+  return { id, label, text: "", start, end, score: 0.95, source: "ner" };
+}
+
+function makeRedaction(
+  id: string,
+  opts: {
+    enabled?: boolean;
+    entityId?: string;
+    label?: string;
+    bbox?: { x0: number; y0: number; x1: number; y1: number };
+    source?: "auto" | "manual";
+  } = {},
+): Redaction {
+  return {
+    id,
+    bbox: opts.bbox ?? { x0: 0, y0: 0, x1: 100, y1: 20 },
+    source: opts.source ?? "auto",
+    entityId: opts.entityId,
+    enabled: opts.enabled ?? true,
+    label: opts.label,
+  };
+}
+
+describe("buildRedactedText", () => {
+  it("returns empty string when ocrResult is null", () => {
+    const result = buildRedactedText(null, [], []);
+    expect(result).toBe("");
+  });
+
+  it("returns fullText unchanged when there are no redactions", () => {
+    const words = [
+      makeWord("Hello", 0, 0),
+      makeWord("world", 6, 0),
+    ];
+    const ocr = makeOcrResult("Hello world", words);
+    expect(buildRedactedText(ocr, [], [])).toBe("Hello world");
+  });
+
+  it("returns fullText unchanged when all redactions are disabled", () => {
+    const words = [
+      makeWord("Hello", 0, 0),
+      makeWord("Sarah", 6, 0),
+    ];
+    const ocr = makeOcrResult("Hello Sarah", words);
+    const entities = [makeEntity("e1", "GIVENNAME", 6, 11)];
+    const redactions = [makeRedaction("r1", { enabled: false, entityId: "e1" })];
+    expect(buildRedactedText(ocr, redactions, entities)).toBe("Hello Sarah");
+  });
+
+  it("replaces a single redacted word with [REDACTED]", () => {
+    const words = [
+      makeWord("Hello", 0, 0),
+      makeWord("Sarah", 6, 0),
+    ];
+    const ocr = makeOcrResult("Hello Sarah", words);
+    const entities = [makeEntity("e1", "GIVENNAME", 6, 11)];
+    const redactions = [makeRedaction("r1", { entityId: "e1" })];
+    expect(buildRedactedText(ocr, redactions, entities)).toBe("Hello [REDACTED]");
+  });
+
+  it("merges adjacent redacted words on the same line into a single [REDACTED]", () => {
+    // "John Smith" — two adjacent words, same entity
+    const words = [
+      makeWord("John",  0, 0),
+      makeWord("Smith", 5, 0),
+    ];
+    const ocr = makeOcrResult("John Smith", words);
+    const entities = [makeEntity("e1", "PERSON", 0, 10)];
+    const redactions = [makeRedaction("r1", { entityId: "e1" })];
+    expect(buildRedactedText(ocr, redactions, entities)).toBe("[REDACTED]");
+  });
+
+  it("produces two [REDACTED] tokens for non-contiguous redacted words on the same line", () => {
+    // "John hello Smith" — John and Smith redacted, hello is not
+    const words = [
+      makeWord("John",  0, 0),
+      makeWord("hello", 5, 0),
+      makeWord("Smith", 11, 0),
+    ];
+    const ocr = makeOcrResult("John hello Smith", words);
+    const e1 = makeEntity("e1", "GIVENNAME", 0, 4);
+    const e2 = makeEntity("e2", "SURNAME",   11, 16);
+    const r1 = makeRedaction("r1", { entityId: "e1" });
+    const r2 = makeRedaction("r2", { entityId: "e2" });
+    expect(buildRedactedText(ocr, [r1, r2], [e1, e2])).toBe("[REDACTED] hello [REDACTED]");
+  });
+
+  it("produces two [REDACTED] tokens with newline for redacted words on different lines", () => {
+    // "John\nSmith" — each on its own line
+    const words = [
+      makeWord("John",  0, 0),
+      makeWord("Smith", 5, 1),
+    ];
+    const ocr = makeOcrResult("John\nSmith", words);
+    const entities = [makeEntity("e1", "PERSON", 0, 10)];
+    const redactions = [makeRedaction("r1", { entityId: "e1" })];
+    expect(buildRedactedText(ocr, redactions, entities)).toBe("[REDACTED]\n[REDACTED]");
+  });
+
+  it("does NOT replace words for AVATAR-labeled redactions", () => {
+    const words = [makeWord("Sarah", 0, 0)];
+    const ocr = makeOcrResult("Sarah", words);
+    const entities = [makeEntity("e1", "AVATAR", 0, 5)];
+    const redactions = [makeRedaction("r1", { entityId: "e1", label: "AVATAR" })];
+    expect(buildRedactedText(ocr, redactions, entities)).toBe("Sarah");
+  });
+
+  it("replaces word overlapping manual redaction bbox", () => {
+    const words = [
+      makeWord("Hello",  0, 0, { x0: 0,   y0: 0, x1: 50,  y1: 20 }),
+      makeWord("secret", 6, 0, { x0: 60,  y0: 0, x1: 120, y1: 20 }),
+      makeWord("world",  13, 0, { x0: 130, y0: 0, x1: 180, y1: 20 }),
+    ];
+    const ocr = makeOcrResult("Hello secret world", words);
+    // Manual redaction overlapping "secret"
+    const redaction = makeRedaction("r1", {
+      source: "manual",
+      bbox: { x0: 55, y0: 0, x1: 125, y1: 20 },
+    });
+    expect(buildRedactedText(ocr, [redaction], [])).toBe("Hello [REDACTED] world");
+  });
+
+  it("does NOT replace words for disabled redactions", () => {
+    const words = [
+      makeWord("Hello", 0, 0),
+      makeWord("Sarah", 6, 0),
+    ];
+    const ocr = makeOcrResult("Hello Sarah", words);
+    const entities = [makeEntity("e1", "GIVENNAME", 6, 11)];
+    const redactions = [makeRedaction("r1", { enabled: false, entityId: "e1" })];
+    expect(buildRedactedText(ocr, redactions, entities)).toBe("Hello Sarah");
+  });
+
+  it("deduplicates when multiple entities cover the same word", () => {
+    const words = [makeWord("Sarah", 0, 0)];
+    const ocr = makeOcrResult("Sarah", words);
+    const e1 = makeEntity("e1", "GIVENNAME", 0, 5);
+    const e2 = makeEntity("e2", "PERSON",    0, 5);
+    const r1 = makeRedaction("r1", { entityId: "e1" });
+    const r2 = makeRedaction("r2", { entityId: "e2" });
+    // Should still produce a single [REDACTED], not two
+    expect(buildRedactedText(ocr, [r1, r2], [e1, e2])).toBe("[REDACTED]");
+  });
+
+  it("returns empty string for empty words array", () => {
+    const ocr = makeOcrResult("", []);
+    expect(buildRedactedText(ocr, [], [])).toBe("");
+  });
+});
 
 // ── PNG metadata chunk helpers ────────────────────────────────────────────────
 
@@ -21,8 +194,7 @@ import { parsePngChunkNames } from "../redact.js";
  *  zTXt  – compressed text
  *  eXIf  – EXIF data embedded in PNG (PNG 1.6+ extension, widely used)
  *  tIME  – image creation/modification timestamp
- *  gAMA  – gamma (not sensitive, but part of the same "ancillary" family;
- *           included to document that we do check for it)
+ *  (gAMA – gamma: not sensitive, intentionally excluded from this list)
  */
 const SENSITIVE_CHUNK_TYPES = ["tEXt", "iTXt", "zTXt", "eXIf", "tIME"];
 

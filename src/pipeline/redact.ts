@@ -1,4 +1,4 @@
-import type { Redaction, RedactionResult } from "../types.js";
+import type { OcrResult, PiiEntity, Redaction, RedactionResult } from "../types.js";
 
 // ── PNG metadata utilities ────────────────────────────────────────────────────
 
@@ -136,6 +136,97 @@ export function drawRedactionPreview(
     ctx.lineWidth = style.lineWidth;
     ctx.strokeRect(x0, y0, w, h);
   }
+}
+
+// ── Redacted text reconstruction ──────────────────────────────────────────────
+
+/**
+ * Reconstruct the OCR full text with PII words replaced by `[REDACTED]`.
+ *
+ * Adjacent redacted words **on the same line** are collapsed into a single
+ * `[REDACTED]` token to avoid repeated markers for multi-word entities.
+ * Words on different lines each receive their own token, preserving the
+ * newline between them.
+ *
+ * @param ocrResult  - The OCR output. When null, returns `""`.
+ * @param redactions - All redaction boxes (only enabled ones are applied).
+ * @param entities   - PII entities used to look up char spans via `entityId`.
+ */
+export function buildRedactedText(
+  ocrResult: OcrResult | null,
+  redactions: Redaction[],
+  entities: PiiEntity[],
+): string {
+  if (ocrResult === null) return "";
+
+  const { fullText, words } = ocrResult;
+
+  // Build a fast lookup: entity id → entity
+  const entityById = new Map<string, PiiEntity>(entities.map((e) => [e.id, e]));
+
+  // Collect the set of word indices that should be redacted
+  const redactedIndices = new Set<number>();
+
+  for (const redaction of redactions) {
+    if (!redaction.enabled) continue;
+    // AVATAR redactions are image regions — they have no text to redact
+    if (redaction.label === "AVATAR") continue;
+
+    if (redaction.entityId !== undefined) {
+      // Entity-based redaction: find all words whose char span overlaps the entity
+      const entity = entityById.get(redaction.entityId);
+      if (!entity) continue;
+      for (let i = 0; i < words.length; i++) {
+        const w = words[i];
+        if (w.charStart < entity.end && w.charEnd > entity.start) {
+          redactedIndices.add(i);
+        }
+      }
+    } else {
+      // Manual redaction (no entityId): find words whose bbox intersects
+      const r = redaction.bbox;
+      for (let i = 0; i < words.length; i++) {
+        const w = words[i].bbox;
+        if (w.x0 < r.x1 && w.x1 > r.x0 && w.y0 < r.y1 && w.y1 > r.y0) {
+          redactedIndices.add(i);
+        }
+      }
+    }
+  }
+
+  // Cursor-based reconstruction: walk words in order, preserving spacing from
+  // fullText, merging adjacent redacted words on the same line.
+  let result = "";
+  let cursor = 0;
+  let inRedactedRun = false;
+  let lastRedactedLineIndex = -1;
+
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    const gap = fullText.slice(cursor, word.charStart);
+
+    if (redactedIndices.has(i)) {
+      if (inRedactedRun && word.lineIndex === lastRedactedLineIndex) {
+        // Same line, same run — skip word and its preceding gap
+      } else {
+        // New redaction run or different line: emit gap then token
+        result += gap;
+        result += "[REDACTED]";
+        inRedactedRun = true;
+        lastRedactedLineIndex = word.lineIndex;
+      }
+    } else {
+      result += gap;
+      result += word.text;
+      inRedactedRun = false;
+    }
+
+    cursor = word.charEnd;
+  }
+
+  // Append any trailing text after the last word (e.g. trailing newline)
+  result += fullText.slice(cursor);
+  return result;
 }
 
 // --- Canvas helpers (abstract over OffscreenCanvas / HTMLCanvasElement) ---

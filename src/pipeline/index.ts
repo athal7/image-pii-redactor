@@ -25,7 +25,7 @@ export { detectPiiRegex } from "./pii-regex.js";
 export { detectPiiCompromise } from "./pii-compromise.js";
 export { entitiesToRedactions, mergeEntities } from "./bridge.js";
 export { detectAvatars, makeCanvasColumnFn } from "./avatar-detect.js";
-export { renderRedactedImage, drawRedactionPreview } from "./redact.js";
+export { renderRedactedImage, drawRedactionPreview, buildRedactedText } from "./redact.js";
 export { preprocessForOcr, computeAverageLuminance, isDarkBackground, sampleDistributedPixels, DARK_THRESHOLD } from "./preprocess.js";
 
 /**
