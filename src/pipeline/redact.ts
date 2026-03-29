@@ -106,6 +106,7 @@ export async function renderRedactedImage(
     entities: appliedEntities,
     width,
     height,
+    redactedText: "",
   };
 }
 
