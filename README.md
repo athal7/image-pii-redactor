@@ -46,10 +46,11 @@ The component self-registers as `<pii-redactor>`. Drop it anywhere — it works 
 ```js
 const redactor = document.querySelector('pii-redactor');
 
-redactor.addEventListener('redaction-confirm', (e) => {
-  const { blob, entities, width, height } = e.detail;
-  // blob: PNG Blob with redactions burned in
-  // entities: array of { label, bbox, source } — no PII, just metadata
+redactor.addEventListener('redaction-complete', (e) => {
+  const { blob, entities, width, height, redactedText } = e.detail;
+  // blob:         PNG Blob with redactions burned in
+  // entities:     array of { label, bbox, source } — no PII, just metadata
+  // redactedText: OCR transcript with redacted words replaced by [REDACTED]
 });
 
 redactor.addEventListener('redaction-cancel', () => {
@@ -88,7 +89,7 @@ redactor.config = {
 Use the pipeline directly without the UI component:
 
 ```js
-import { analyzeImage, renderRedactedImage } from 'image-pii-redactor';
+import { analyzeImage, renderRedactedImage, buildRedactedText } from 'image-pii-redactor';
 
 const result = await analyzeImage(imageBlob, {
   lang: 'eng',
@@ -96,11 +97,13 @@ const result = await analyzeImage(imageBlob, {
   minConfidence: 0.7,
 }, (progress) => console.log(progress.message));
 
-// result.ocr       — full OCR text + word bboxes
-// result.entities  — detected PII entities with char offsets
+// result.ocr        — full OCR text + word bboxes
+// result.entities   — detected PII entities with char offsets
 // result.redactions — proposed redaction boxes in pixel coords
 
-const redactedBlob = await renderRedactedImage(imageBlob, result.redactions);
+const { blob } = await renderRedactedImage(imageBlob, result.redactions);
+const redactedText = buildRedactedText(result.ocr, result.redactions, result.entities);
+// redactedText: "Hello [REDACTED] — thanks for your message"
 ```
 
 ### Service Worker (offline + privacy firewall)
