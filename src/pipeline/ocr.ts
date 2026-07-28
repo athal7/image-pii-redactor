@@ -64,7 +64,8 @@ export async function runOcr(
 
   let result: Awaited<ReturnType<typeof worker.recognize>>;
   try {
-    result = await worker.recognize(source);
+    // Tesseract.js v7: request block-level output to get nested structure
+    result = await worker.recognize(source, {}, { blocks: true });
   } finally {
     // Always terminate the worker — even on error — to prevent memory leaks
     await worker.terminate();
@@ -77,9 +78,15 @@ export async function runOcr(
   let fullText = "";
   let charOffset = 0;
 
-  const lines = result.data.lines ?? [];
-  for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-    const line = lines[lineIndex];
+  // Tesseract.js v7: traverse blocks -> paragraphs -> lines -> words
+  // First, flatten all lines to make iteration simpler
+  const blocks = result.data.blocks ?? [];
+  const allLines = blocks.flatMap((block) =>
+    (block.paragraphs ?? []).flatMap((paragraph) => paragraph.lines ?? []),
+  );
+
+  for (let lineIndex = 0; lineIndex < allLines.length; lineIndex++) {
+    const line = allLines[lineIndex];
     const lineWords = line.words ?? [];
 
     for (let wi = 0; wi < lineWords.length; wi++) {
@@ -113,7 +120,7 @@ export async function runOcr(
     }
 
     // Add newline between lines
-    if (lineIndex < lines.length - 1) {
+    if (lineIndex < allLines.length - 1) {
       fullText += "\n";
       charOffset += 1;
     }
