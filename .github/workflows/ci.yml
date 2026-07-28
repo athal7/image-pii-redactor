@@ -44,7 +44,7 @@ jobs:
       # Cache the Chromium user data dir that holds the downloaded NER model
       # (~80MB via the browser Cache API). Bust the cache when the model changes.
       - name: Cache NER model (browser storage)
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: /tmp/pw-model-cache
           key: ner-model-onnx-community-multilang-pii-ner-ONNX-v1
